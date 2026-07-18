@@ -1,0 +1,792 @@
+// SAIMO Ecole — Schéma Prisma complet
+// Version 2.0 — Juillet 2026
+// Domaines : Organisation · Sécurité · Scolarité · Pédagogie · Évaluation · Bulletins · Présences · Finance · Communication/IA
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────
+// DOMAINE 1 — ORGANISATION
+// ─────────────────────────────────────────────
+
+model Etablissement {
+  id              String   @id @default(cuid())
+  nom             String
+  code            String   @unique
+  logo            String?
+  adresse         String?
+  telephone       String?
+  email           String?
+  siteWeb         String?
+  devise          String   @default("GNF")
+  pays            String   @default("Guinée")
+  ville           String?
+  mentionsLegales String?
+  formatMatricule String   @default("ANNEE-SEQ")
+  formatRecu      String   @default("REC-ANNEE-SEQ")
+  actif           Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  anneesScolaires          AnneeScolaire[]
+  utilisateurs             UtilisateurEtablissement[]
+  eleves                   Eleve[]
+  cycles                   Cycle[]
+  classes                  Classe[]
+  matieres                 Matiere[]
+  enseignants              Enseignant[]
+  typesFrais               TypeFrais[]
+  typesEvaluation          TypeEvaluation[]
+  parametres               Parametre[]
+  annonces                 Annonce[]
+  modelesEmail             ModeleEmail[]
+  notifications            Notification[]
+  journalAudits            JournalAudit[]
+  invitations              Invitation[]
+
+  @@map("etablissements")
+}
+
+model AnneeScolaire {
+  id              String   @id @default(cuid())
+  etablissementId String
+  libelle         String   // ex: "2025-2026"
+  dateDebut       DateTime
+  dateFin         DateTime
+  active          Boolean  @default(false)
+  verrouillee     Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  etablissement Etablissement  @relation(fields: [etablissementId], references: [id], onDelete: Restrict)
+  periodes      Periode[]
+  inscriptions  Inscription[]
+  classes       Classe[]
+  echeances     Echeance[]
+
+  @@unique([etablissementId, libelle])
+  @@map("annees_scolaires")
+}
+
+model Periode {
+  id              String   @id @default(cuid())
+  anneeScolaireId String
+  nom             String   // "1er Trimestre"
+  ordre           Int
+  dateDebut       DateTime
+  dateFin         DateTime
+  active          Boolean  @default(false)
+
+  anneeScolaire AnneeScolaire @relation(fields: [anneeScolaireId], references: [id], onDelete: Cascade)
+  evaluations   Evaluation[]
+  bulletins     Bulletin[]
+  presences     Presence[]    @relation("PresencesPeriode")
+
+  @@map("periodes")
+}
+
+model Parametre {
+  id              String  @id @default(cuid())
+  etablissementId String
+  cle             String
+  valeur          String
+  description     String?
+
+  etablissement Etablissement @relation(fields: [etablissementId], references: [id], onDelete: Cascade)
+
+  @@unique([etablissementId, cle])
+  @@map("parametres")
+}
+
+// ─────────────────────────────────────────────
+// DOMAINE 2 — SÉCURITÉ & AUTHENTIFICATION
+// ─────────────────────────────────────────────
+
+enum RoleUtilisateur {
+  SUPER_ADMIN_SAIMO
+  ADMIN_ETABLISSEMENT
+  DIRECTEUR
+  SECRETAIRE
+  COMPTABLE
+  ENSEIGNANT
+  PROF_PRINCIPAL
+  PARENT
+  ELEVE
+}
+
+model Utilisateur {
+  id                   String    @id @default(cuid())
+  email                String    @unique
+  motDePasseHash       String?
+  prenom               String
+  nom                  String
+  telephone            String?
+  photo                String?
+  actif                Boolean   @default(true)
+  emailVerifie         Boolean   @default(false)
+  tentativesConnexion  Int       @default(0)
+  bloqueJusquA         DateTime?
+  derniereConnexion    DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  etablissements   UtilisateurEtablissement[]
+  sessions         Session[]
+  invitations      Invitation[]              @relation("InvitationsEnvoyees")
+  journalAudits    JournalAudit[]
+  enseignant       Enseignant?
+  parent           Parent?
+  eleveCompte      Eleve?                    @relation("CompteEleve")
+
+  @@map("utilisateurs")
+}
+
+model UtilisateurEtablissement {
+  id              String          @id @default(cuid())
+  utilisateurId   String
+  etablissementId String
+  role            RoleUtilisateur
+  actif           Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+
+  utilisateur   Utilisateur   @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  etablissement Etablissement @relation(fields: [etablissementId], references: [id], onDelete: Cascade)
+
+  @@unique([utilisateurId, etablissementId])
+  @@map("utilisateurs_etablissements")
+}
+
+model Session {
+  id            String   @id @default(cuid())
+  utilisateurId String
+  token         String   @unique
+  expireAt      DateTime
+  ipAdresse     String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  utilisateur Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Invitation {
+  id              String          @id @default(cuid())
+  email           String
+  role            RoleUtilisateur
+  etablissementId String
+  token           String          @unique
+  expireAt        DateTime
+  accepteAt       DateTime?
+  invitePar       String
+
+  inviteur      Utilisateur   @relation("InvitationsEnvoyees", fields: [invitePar], references: [id])
+  etablissement Etablissement @relation(fields: [etablissementId], references: [id], onDelete: Cascade)
+
+  @@map("invitations")
+}
+
+model JournalAudit {
+  id              String   @id @default(cuid())
+  utilisateurId   String?
+  etablissementId String?
+  action          String   // CREATE, UPDATE, DELETE, LOGIN, VALIDATE, LOCK...
+  entite          String   // Eleve, Note, Paiement...
+  entiteId        String?
+  avant           Json?
+  apres           Json?
+  ipAdresse       String?
+  metadata        Json?
+  createdAt       DateTime @default(now())
+
+  utilisateur   Utilisateur?   @relation(fields: [utilisateurId], references: [id], onDelete: SetNull)
+  etablissement Etablissement? @relation(fields: [etablissementId], references: [id], onDelete: SetNull)
+
+  @@index([etablissementId, createdAt])
+  @@index([entite, entiteId])
+  @@map("journal_audits")
+}
+
+// ─────────────────────────────────────────────
+// DOMAINE 3 — SCOLARITÉ
+// ─────────────────────────────────────────────
+
+model Eleve {
+  id                  String   @id @default(cuid())
+  etablissementId     String
+  matricule           String
+  prenom              String
+  nom                 String
+  dateNaissance       DateTime?
+  lieuNaissance       String?
+  sexe                String?  // M / F
+  nationalite         String?
+  photo               String?
+  adresse             String?
+  statut              String   @default("actif") // actif, archive, transfere
+  compteUtilisateurId String?  @unique
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  etablissement     Etablissement        @relation(fields: [etablissementId], references: [id], onDelete: Restrict)
+  compteUtilisateur Utilisateur?         @relation("CompteEleve", fields: [compteUtilisateurId], references: [id])
+  parents           RelationParentEleve[]
+  inscriptions      Inscription[]
+  documents         DocumentEleve[]
+  notes             Note[]
+  presences         Presence[]
+  bulletins         Bulletin[]
+
+  @@unique([etablissementId, matricule])
+  @@index([etablissementId, statut])
+  @@map("eleves")
+}
+
+model Parent {
+  id            String   @id @default(cuid())
+  utilisateurId String?  @unique
+  prenom        String
+  nom           String
+  telephone     String
+  email         String?
+  adresse       String?
+  profession    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  utilisateur Utilisateur?          @relation(fields: [utilisateurId], references: [id])
+  enfants     RelationParentEleve[]
+
+  @@map("parents")
+}
+
+model RelationParentEleve {
+  id        String  @id @default(cuid())
+  parentId  String
+  eleveId   String
+  lien      String  // pere, mere, tuteur, autre
+  principal Boolean @default(false)
+
+  parent Parent @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  eleve  Eleve  @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+
+  @@unique([parentId, eleveId])
+  @@map("relations_parent_eleve")
+}
+
+model DocumentEleve {
+  id        String   @id @default(cuid())
+  eleveId   String
+  type      String   // acte_naissance, photo, bulletin_anterieur, autre
+  nom       String
+  url       String
+  taille    Int?
+  verifie   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  eleve Eleve @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+
+  @@map("documents_eleves")
+}
+
+model Inscription {
+  id              String   @id @default(cuid())
+  eleveId         String
+  anneeScolaireId String
+  classeId        String
+  etablissementId String
+  dateInscription DateTime @default(now())
+  statut          String   @default("active") // active, transfere, abandonne, diplome
+  typeInscription String   @default("nouvelle") // nouvelle, reinscription
+  observations    String?
+  inscritParId    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  eleve         Eleve         @relation(fields: [eleveId], references: [id], onDelete: Restrict)
+  anneeScolaire AnneeScolaire @relation(fields: [anneeScolaireId], references: [id], onDelete: Restrict)
+  classe        Classe        @relation(fields: [classeId], references: [id], onDelete: Restrict)
+  fraisEleves   FraisEleve[]
+
+  @@unique([eleveId, anneeScolaireId, etablissementId])
+  @@map("inscriptions")
+}
+
+// ─────────────────────────────────────────────
+// DOMAINE 4 — PÉDAGOGIE
+// ─────────────────────────────────────────────
+
+model Cycle {
+  id              String @id @default(cuid())
+  etablissementId String
+  nom             String // Primaire, College, Lycee
+  ordre           Int
+
+  etablissement Etablissement @relation(fields: [etablissementId], references: [id], onDelete: Cascade)
+  niveaux       Niveau[]
+
+  @@unique([etablissementId, nom])
+  @@map("cycles")
+}
+
+model Niveau {
+  id      String @id @default(cuid())
+  cycleId String
+  nom     String // 6eme, 5eme, etc.
+  ordre   Int
+
+  cycle          Cycle              @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  classes        Classe[]
+  matiereNiveaux MatiereNiveau[]
+  echeances      Echeance[]
+
+  @@map("niveaux")
+}
+
+model Classe {
+  id              String   @id @default(cuid())
+  etablissementId String
+  anneeScolaireId String
+  niveauId        String
+  nom             String   // "6eme A"
+  capacite        Int?
+  salle           String?
+  createdAt       DateTime @default(now())
+
+  etablissement           Etablissement           @relation(fields: [etablissementId], references: [id], onDelete: Restrict)
+  anneeScolaire           AnneeScolaire           @relation(fields: [anneeScolaireId], references: [id], onDelete: Restrict)
+  niveau                  Niveau                  @relation(fields: [niveauId], references: [id], onDelete: Restrict)
+  inscriptions            Inscription[]
+  affectationsEnseignants AffectationEnseignant[]
+  evaluations             Evaluation[]
+  bulletins               Bulletin[]
+  presences               Presence[]
+  seances                 Seance[]
+
+  @@unique([etablissementId, anneeScolaireId, nom])
+  @@map("classes")
+}
+
+model Matiere {
+  id              String @id @default(cuid())
+  etablissementId String
+  nom             String
+  code            String?
+  actif           Boolean @default(true)
+
+  etablissement    Etablissement           @relation(fields: [etablissementId], references: [id], onDelete: Restrict)
+  niveaux          MatiereNiveau[]
+  affectations     AffectationEnseignant[]
+  evaluations      Evaluation[]
+  seances          Seance[]                @relation("SeancesMatiere")
+  moyennesMatieres MoyenneMatiere[]
+
+  @@unique([etablissementId, nom])
+  @@map("matieres")
+}
+
+model MatiereNiveau {
+  id          String  @id @default(cuid())
+  matiereId   String
+  niveauId    String
+  coefficient Decimal @default(1) @db.Decimal(4, 2)
+
+  matiere Matiere @relation(fields: [matiereId], references: [id], onDelete: Cascade)
+  niveau  Niveau  @relation(fields: [niveauId], references: [id], onDelete: Cascade)
+
+  @@unique([matiereId, niveauId])
+  @@map("matieres_niveaux")
+}
+
+model Enseignant {
+  id              String  @id @default(cuid())
+  utilisateurId   String  @unique
+  etablissementId String
+  matricule       String?
+  specialite      String?
+
+  utilisateur   Utilisateur           @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  etablissement Etablissement         @relation(fields: [etablissementId], references: [id], onDelete: Restrict)
+  affectations  AffectationEnseignant[]
+
+  @@map("enseignants")
+}
+
+model AffectationEnseignant {
+  id              String  @id @default(cuid())
+  enseignantId    String
+  classeId        String
+  matiereId       String
+  anneeScolaireId String
+  estProfPrincipal Boolean @default(false)
+
+  enseignant Enseignant @relation(fields: [enseignantId], references: [id], onDelete: Cascade)
+  classe     Classe     @relation(fields: [classeId], references: [id], onDelete: Cascade)
+  matiere    Matiere    @relation(fields: [matiereId], references: [id], onDelete: Restrict)
+
+  @@unique([enseignantId, classeId, matiereId, anneeScolaireId])
+  @@map("affectations_enseignants")
+}
+
+// ─────────────────────────────────────────────
+// DOMAINE 5 — ÉVALUATIONS & NOTES
+// ─────────────────────────────────────────────
+
+model TypeEvaluation {
+  id              String  @id @default(cuid())
+  etablissementId String
+  nom             String  // Devoir, Examen, Composition
+  noteMaximale    Decimal @default(20) @db.Decimal(5, 2)
+
+  etablissement Etablissement @relation(fields: [etablissementId], references: [id], onDelete: Cascade)
+  evaluations   Evaluation[]
+
+  @@unique([etablissementId, nom])
+  @@map("types_evaluation")
+}
+
+model Evaluation {
+  id               String   @id @default(cuid())
+  etablissementId  String
+  periodeId        String
+  classeId         String
+  matiereId        String
+  typeEvaluationId String
+  titre            String?
+  dateEvaluation   DateTime?
+  noteMaximale     Decimal  @default(20) @db.Decimal(5, 2)
+  // Statuts : ouverte → soumise → validee → verrouillee
+  statut           String   @default("ouverte")
+  creePar          String?
+  valideePar       String?
+  dateValidation   DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  periode        Periode        @relation(fields: [periodeId], references: [id], onDelete: Restrict)
+  classe         Classe         @relation(fields: [classeId], references: [id], onDelete: Restrict)
+  matiere        Matiere        @relation(fields: [matiereId], references: [id], onDelete: Restrict)
+  typeEvaluation TypeEvaluation @relation(fields: [typeEvaluationId], references: [id], onDelete: Restrict)
+  notes          Note[]
+
+  @@index([classeId, periodeId])
+  @@map("evaluations")
+}
+
+model Note {
+  id           String   @id @default(cuid())
+  evaluationId String
+  eleveId      String
+  // valeur null = non saisi ; absent et dispense sont exclusifs
+  valeur       Decimal? @db.Decimal(5, 2)
+  absent       Boolean  @default(false)
+  dispense     Boolean  @default(false)
+  observations String?
+  saisieParId  String?
+  modifieParId String?
+  dateModif    DateTime?
+  createdAt    DateTime @default(now())
+
+  evaluation Evaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  eleve      Eleve      @relation(fields: [eleveId], references: [id], onDelete: Restrict)
+
+  @@unique([evaluationId, eleveId])
+  @@map("notes")
+}
+
+// ─────────────────────────────────────────────
+// DOMAINE 6 — BULLETINS
+// ─────────────────────────────────────────────
+
+model Bulletin {
+  id              String   @id @default(cuid())
+  eleveId         String
+  classeId        String
+  periodeId       String
+  anneeScolaireId String
+  // brouillon → valide → publie
+  statut          String   @default("brouillon")
+  moyenneGenerale Decimal? @db.Decimal(5, 2)
+  rang            Int?
+  effectifClasse  Int?
+  appreciation    String?
+  mentionHonneur  String?
+  observations    String?
+  valideParId     String?
+  dateValidation  DateTime?
+  urlPdf          String?
+  // Snapshot des données au moment de la génération (RM-17)
+  donneeSnapshot  Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  eleve           Eleve            @relation(fields: [eleveId], references: [id], onDelete: Restrict)
+  classe          Classe           @relation(fields: [classeId], references: [id], onDelete: Restrict)
+  periode         Periode          @relation(fields: [periodeId], references: [id], onDelete: Restrict)
+  detailsMatieres MoyenneMatiere[]
+
+  @@unique([eleveId, periodeId])
+  @@map("bulletins")
+}
+
+model MoyenneMatiere {
+  id          String   @id @default(cuid())
+  bulletinId  String
+  matiereId   String
+  coefficient Decimal  @db.Decimal(4, 2)
+  moyenne     Decimal? @db.Decimal(5, 2)
+  rang        Int?
+  appreciation String?
+
+  bulletin Bulletin @relation(fields: [bulletinId], references: [id], onDelete: Cascade)
+  matiere  Matiere  @relation(fields: [matiereId], references: [id], onDelete: Restrict)
+
+  @@unique([bulletinId, matiereId])
+  @@map("moyennes_matieres")
+}
+
+// ─────────────────────────────────────────────
+// DOMAINE 7 — PRÉSENCES
+// ─────────────────────────────────────────────
+
+model Seance {
+  id         String   @id @default(cuid())
+  classeId   String
+  matiereId  String?
+  date       DateTime @db.Date
+  heureDebut String?
+  heureFin   String?
+
+  classe    Classe     @relation(fields: [classeId], references: [id], onDelete: Cascade)
+  matiere   Matiere?   @relation("SeancesMatiere", fields: [matiereId], references: [id])
+  presences Presence[]
+
+  @@map("seances")
+}
+
+model Presence {
+  id            String   @id @default(cuid())
+  seanceId      String
+  eleveId       String
+  classeId      String
+  periodeId     String?
+  // present, absent, retard
+  statut        String
+  motif         String?
+  justifie      Boolean  @default(false)
+  commentaire   String?
+  enregistrePar String?
+  createdAt     DateTime @default(now())
+
+  seance         Seance          @relation(fields: [seanceId], references: [id], onDelete: Cascade)
+  eleve          Eleve           @relation(fields: [eleveId], references: [id], onDelete: Restrict)
+  classe         Classe          @relation(fields: [classeId], references: [id], onDelete: Restrict)
+  periode        Periode?        @relation("PresencesPeriode", fields: [periodeId], references: [id])
+  justifications Justification[]
+
+  @@unique([seanceId, eleveId])
+  @@map("presences")
+}
+
+model Justification {
+  id           String   @id @default(cuid())
+  presenceId   String
+  motif        String
+  documentUrl  String?
+  acceptee     Boolean  @default(false)
+  traiteeParId String?
+  createdAt    DateTime @default(now())
+
+  presence Presence @relation(fields: [presenceId], references: [id], onDelete: Cascade)
+
+  @@map("justifications")
+}
+
+// ─────────────────────────────────────────────
+// DOMAINE 8 — FINANCE
+// ─────────────────────────────────────────────
+
+model TypeFrais {
+  id              String  @id @default(cuid())
+  etablissementId String
+  nom             String  // Scolarite, Inscription, Cantine
+  description     String?
+  obligatoire     Boolean @default(true)
+  actif           Boolean @default(true)
+
+  etablissement Etablissement @relation(fields: [etablissementId], references: [id], onDelete: Restrict)
+  echeances     Echeance[]
+
+  @@unique([etablissementId, nom])
+  @@map("types_frais")
+}
+
+model Echeance {
+  id              String   @id @default(cuid())
+  typeFraisId     String
+  anneeScolaireId String
+  niveauId        String?
+  montant         Decimal  @db.Decimal(12, 2)
+  dateEcheance    DateTime?
+  libelle         String?
+
+  typeFrais     TypeFrais     @relation(fields: [typeFraisId], references: [id], onDelete: Restrict)
+  anneeScolaire AnneeScolaire @relation(fields: [anneeScolaireId], references: [id], onDelete: Restrict)
+  niveau        Niveau?       @relation(fields: [niveauId], references: [id])
+  fraisEleves   FraisEleve[]
+
+  @@map("echeances")
+}
+
+model FraisEleve {
+  id          String  @id @default(cuid())
+  inscriptionId String
+  echeanceId  String
+  montantDu   Decimal @db.Decimal(12, 2)
+  montantPaye Decimal @default(0) @db.Decimal(12, 2)
+  // solde = montantDu - montantPaye - remises (calculé en service)
+  statut      String  @default("impaye") // impaye, partiel, solde, annule
+
+  inscription Inscription @relation(fields: [inscriptionId], references: [id], onDelete: Restrict)
+  echeance    Echeance    @relation(fields: [echeanceId], references: [id], onDelete: Restrict)
+  paiements   Paiement[]
+  remises     Remise[]
+
+  @@unique([inscriptionId, echeanceId])
+  @@map("frais_eleves")
+}
+
+model Paiement {
+  id              String   @id @default(cuid())
+  fraisEleveId    String
+  numeroRecu      String   @unique
+  montant         Decimal  @db.Decimal(12, 2)
+  // especes, cheque, virement, mobile
+  modePaiement    String
+  reference       String?
+  // valide, annule
+  statut          String   @default("valide")
+  observation     String?
+  encaisseParId   String?
+  annuleParId     String?
+  motifAnnulation String?
+  dateAnnulation  DateTime?
+  createdAt       DateTime @default(now())
+
+  fraisEleve FraisEleve @relation(fields: [fraisEleveId], references: [id], onDelete: Restrict)
+  recu       Recu?
+
+  @@index([fraisEleveId])
+  @@map("paiements")
+}
+
+model Recu {
+  id         String   @id @default(cuid())
+  paiementId String   @unique
+  numero     String   @unique
+  urlPdf     String?
+  envoiEmail Boolean  @default(false)
+  dateEnvoi  DateTime?
+  createdAt  DateTime @default(now())
+
+  paiement Paiement @relation(fields: [paiementId], references: [id], onDelete: Restrict)
+
+  @@map("recus")
+}
+
+model Remise {
+  id           String   @id @default(cuid())
+  fraisEleveId String
+  montant      Decimal  @db.Decimal(12, 2)
+  motif        String
+  accordeParId String?
+  createdAt    DateTime @default(now())
+
+  fraisEleve FraisEleve @relation(fields: [fraisEleveId], references: [id], onDelete: Restrict)
+
+  @@map("remises")
+}
+
+// ─────────────────────────────────────────────
+// DOMAINE 9 — COMMUNICATION & IA
+// ─────────────────────────────────────────────
+
+model ModeleEmail {
+  id              String  @id @default(cuid())
+  etablissementId String?
+  code            String  @unique
+  nom             String
+  sujet           String
+  contenu         String  // HTML template avec variables {{nom}}, etc.
+  variables       Json?   // liste des variables disponibles
+  actif           Boolean @default(true)
+
+  etablissement Etablissement? @relation(fields: [etablissementId], references: [id])
+
+  @@map("modeles_email")
+}
+
+model Notification {
+  id                String   @id @default(cuid())
+  etablissementId   String?
+  type              String   // email, annonce
+  destinataireId    String?
+  destinataireEmail String?
+  sujet             String
+  contenu           String
+  // en_attente, envoye, distribue, echoue, rejete
+  statut            String   @default("en_attente")
+  idExterne         String?  // ID Brevo
+  motifEchec        String?
+  tentatives        Int      @default(0)
+  dateEnvoi         DateTime?
+  createdAt         DateTime @default(now())
+
+  etablissement Etablissement? @relation(fields: [etablissementId], references: [id])
+
+  @@index([etablissementId, statut])
+  @@map("notifications")
+}
+
+model Annonce {
+  id              String   @id @default(cuid())
+  etablissementId String
+  titre           String
+  contenu         String
+  rolesVises      Json?    // ex: ["PARENT", "ELEVE"]
+  publie          Boolean  @default(false)
+  creePar         String?
+  datePublication DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  etablissement Etablissement @relation(fields: [etablissementId], references: [id], onDelete: Cascade)
+
+  @@map("annonces")
+}
+
+// RM-15 : L'IA ne prend aucune décision scolaire ou financière définitive
+model DemandeIA {
+  id              String   @id @default(cuid())
+  etablissementId String?
+  utilisateurId   String
+  // redaction_annonce, appreciation, resume_rapport, explication_tendance, courrier
+  typeAction      String
+  contexte        Json?    // données envoyées (minimisées)
+  prompt          String
+  reponse         String?
+  // en_attente, repondu, valide, rejete
+  statut          String   @default("en_attente")
+  valideParId     String?
+  dateValidation  DateTime?
+  utilise         Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  @@index([etablissementId, utilisateurId])
+  @@map("demandes_ia")
+}
