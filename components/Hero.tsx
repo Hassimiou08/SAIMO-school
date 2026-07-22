@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ArrowRight, Download, PlayCircle } from "lucide-react";
-import { DashboardMock } from "./DashboardMock";
 
 export function Hero() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -80,8 +79,6 @@ export function Hero() {
             </a>
           </div>
         </div>
-
-        <DashboardMock />
       </div>
     </section>
   );

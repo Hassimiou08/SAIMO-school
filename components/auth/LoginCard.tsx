@@ -21,7 +21,7 @@ export function LoginCard() {
   }, []);
 
   return (
-    <div ref={rootRef} className="w-full max-w-md">
+    <div ref={rootRef} className="w-full max-w-md" suppressHydrationWarning>
       <div className="login-badge mb-8 flex justify-center">
         <LogoLockup variant="light" />
       </div>

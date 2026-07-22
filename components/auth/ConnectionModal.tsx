@@ -30,7 +30,7 @@ export function ConnectionModal() {
   }, []);
 
   return (
-    <div ref={rootRef} className="fixed inset-0 z-50">
+    <div ref={rootRef} className="fixed inset-0 z-50" suppressHydrationWarning>
       {/* Backdrop */}
       <div className="modal-backdrop absolute inset-0 bg-black/50 backdrop-blur-sm" />
 

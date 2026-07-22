@@ -22,6 +22,8 @@ export function AdminLoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [establishment, setEstablishment] = useState("");
+  const [accountType, setAccountType] = useState<"admin" | "teacher" | "student" | "parent">("admin");
+  const [role, setRole] = useState<"super_admin" | "directeur" | "secretaire" | "comptable" | "enseignant" | "parent" | "eleve">("directeur");
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"credentials" | "biometric">("credentials");
   const [biometricStatus, setBiometricStatus] = useState<"idle" | "listening" | "processing" | "success" | "error">("idle");
@@ -38,18 +40,51 @@ export function AdminLoginForm() {
     return () => ctx.revert();
   }, []);
 
+  const getRoleFromAccountType = (type: typeof accountType) => {
+    switch (type) {
+      case "admin":
+        return "directeur";
+      case "teacher":
+        return "enseignant";
+      case "student":
+        return "eleve";
+      case "parent":
+        return "parent";
+      default:
+        return "directeur";
+    }
+  };
+
+  const getRedirectPath = (type: typeof accountType) => {
+    switch (type) {
+      case "admin":
+        return "/portail";
+      case "teacher":
+        return "/portail";
+      case "student":
+        return "/portail/eleves";
+      case "parent":
+        return "/portail";
+      default:
+        return "/portail";
+    }
+  };
+
   const handleCredentialsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
+    const resolvedRole = getRoleFromAccountType(accountType);
+    setRole(resolvedRole);
+
     // Simulation d'authentification - À remplacer par Auth0 réel
     setTimeout(() => {
       if (email && password && establishment) {
         setBiometricStatus("success");
+        window.localStorage.setItem("saimo-portal-role", resolvedRole);
         setTimeout(() => {
-          // Redirection vers le portail
-          window.location.href = "/portail";
+          window.location.href = getRedirectPath(accountType);
         }, 1500);
       } else {
         setError("Veuillez remplir tous les champs");
@@ -63,14 +98,18 @@ export function AdminLoginForm() {
     setError("");
 
     // Simulation de l&apos;authentification biométrique
+    const resolvedRole = getRoleFromAccountType(accountType);
+    setRole(resolvedRole);
+
     setTimeout(() => {
       setBiometricStatus("processing");
       setTimeout(() => {
         if (Math.random() > 0.3) {
           // 70% de succès simulé
           setBiometricStatus("success");
+          window.localStorage.setItem("saimo-portal-role", resolvedRole);
           setTimeout(() => {
-            window.location.href = "/portail";
+            window.location.href = getRedirectPath(accountType);
           }, 1500);
         } else {
           setBiometricStatus("error");
@@ -90,7 +129,7 @@ export function AdminLoginForm() {
   };
 
   return (
-    <div ref={rootRef} className="w-full max-w-md">
+    <div ref={rootRef} className="w-full max-w-3xl" suppressHydrationWarning>
       <div className="login-badge mb-8 flex justify-center">
         <LogoLockup variant="light" />
       </div>
@@ -168,6 +207,23 @@ export function AdminLoginForm() {
                   className="w-full rounded-xl border border-primary-500/20 bg-white/[0.03] py-3 pl-10 pr-3.5 text-sm text-white placeholder:text-neutral-500 outline-none transition-all focus:border-primary-400/60 focus:bg-white/[0.05]"
                 />
               </div>
+            </div>
+
+            <div className="login-field">
+              <label htmlFor="accountType" className="mb-1.5 block text-xs font-medium text-neutral-300">
+                Type de compte
+              </label>
+              <select
+                id="accountType"
+                value={accountType}
+                onChange={(e) => setAccountType(e.target.value as typeof accountType)}
+                className="w-full rounded-xl border border-primary-500/20 bg-white/[0.03] py-3 px-3.5 text-sm text-white outline-none transition-all focus:border-primary-400/60 focus:bg-white/[0.05]"
+              >
+                <option value="admin" className="bg-neutral-900">Administrateur</option>
+                <option value="teacher" className="bg-neutral-900">Enseignant</option>
+                <option value="student" className="bg-neutral-900">Élève</option>
+                <option value="parent" className="bg-neutral-900">Parent</option>
+              </select>
             </div>
 
             <div className="login-field">

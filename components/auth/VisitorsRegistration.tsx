@@ -79,7 +79,7 @@ export function VisitorsRegistration() {
   ];
 
   return (
-    <div ref={rootRef} className="w-full max-w-2xl">
+    <div ref={rootRef} className="w-full max-w-2xl" suppressHydrationWarning>
       <div className="card-badge mb-8 flex justify-center">
         <LogoLockup variant="light" />
       </div>
@@ -105,33 +105,30 @@ export function VisitorsRegistration() {
                 {accountTypes.map((type) => {
                   const Icon = type.icon;
                   const isSelected = selectedType === type.id;
-                  const bgColor =
-                    type.color === "primary"
-                      ? "border-primary-500/50 bg-primary-900/20 hover:bg-primary-900/40"
+                  
+                  let buttonClass = "account-type group rounded-xl border-2 p-4 text-left transition-all ";
+                  let iconClass = "mb-2 h-5 w-5 transition-transform ";
+                  
+                  if (type.color === "primary") {
+                    buttonClass += isSelected
+                      ? "border-primary-400 bg-gradient-to-br from-primary-600/30 to-primary-600/10 shadow-lg shadow-primary-500/20"
+                      : "border-primary-500/50 bg-primary-900/20 hover:bg-primary-900/40";
+                    iconClass += "text-primary-400 group-hover:scale-110 group-hover:text-primary-300";
+                  } else {
+                    buttonClass += isSelected
+                      ? "border-secondary-400 bg-gradient-to-br from-secondary-600/30 to-secondary-600/10 shadow-lg shadow-secondary-500/20"
                       : "border-secondary-500/50 bg-secondary-900/20 hover:bg-secondary-900/40";
+                    iconClass += "text-secondary-400 group-hover:scale-110 group-hover:text-secondary-300";
+                  }
 
                   return (
                     <button
                       key={type.id}
                       type="button"
                       onClick={() => setSelectedType(type.id as AccountType)}
-                      className={`account-type group rounded-xl border-2 p-4 text-left transition-all ${
-                        isSelected
-                          ? `border-${type.color}-400 ${
-                              type.color === "primary"
-                                ? "bg-gradient-to-br from-primary-600/30 to-primary-600/10"
-                                : "bg-gradient-to-br from-secondary-600/30 to-secondary-600/10"
-                            } shadow-lg shadow-${type.color}-500/20`
-                          : bgColor
-                      }`}
+                      className={buttonClass}
                     >
-                      <Icon
-                        className={`mb-2 h-5 w-5 transition-transform ${
-                          type.color === "primary"
-                            ? "text-primary-400 group-hover:scale-110 group-hover:text-primary-300"
-                            : "text-secondary-400 group-hover:scale-110 group-hover:text-secondary-300"
-                        }`}
-                      />
+                      <Icon className={iconClass} />
                       <div className="font-medium text-white">{type.label}</div>
                       <div className="text-xs text-neutral-400">
                         {type.description}
@@ -180,7 +177,7 @@ export function VisitorsRegistration() {
                 </div>
 
                 {error && (
-                  <div className="rounded-lg border border-error-500/30 bg-error-500/10 p-3 text-xs text-error-300">
+                  <div className="rounded-lg border border-error-500/30 bg-error-500/10 p-3 text-xs text-error-300" suppressHydrationWarning>
                     {error}
                   </div>
                 )}
@@ -226,12 +223,15 @@ export function VisitorsRegistration() {
 
         {/* Footer */}
         <div className="mt-8 border-t border-primary-500/20 pt-6">
-          <Link href="/connexion">
-            <p className="flex items-center gap-2 text-center text-xs text-neutral-400 hover:text-neutral-300 transition-colors cursor-pointer">
+          <div suppressHydrationWarning>
+            <Link 
+              href="/connexion" 
+              className="flex items-center justify-center gap-2 text-center text-xs text-neutral-400 hover:text-neutral-300 transition-colors cursor-pointer"
+            >
               <ArrowLeft className="h-3 w-3" />
               Retour
-            </p>
-          </Link>
+            </Link>
+          </div>
         </div>
       </div>
     </div>
