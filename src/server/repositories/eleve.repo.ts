@@ -4,7 +4,7 @@ import type { Prisma } from "@prisma/client";
 export type EleveAvecRelations = Prisma.EleveGetPayload<{
   include: {
     parents: { include: { parent: true } };
-    inscriptions: { include: { classe: true; anneeScolaire: true } };
+    inscriptions: { include: { classe: true, anneeScolaire: true } };
   };
 }>;
 
@@ -73,7 +73,7 @@ export async function trouverEleveParId(
     include: {
       parents: { include: { parent: true } },
       inscriptions: {
-        include: { classe: true; anneeScolaire: true },
+        include: { classe: true, anneeScolaire: true },
         orderBy: { createdAt: "desc" },
       },
     },
