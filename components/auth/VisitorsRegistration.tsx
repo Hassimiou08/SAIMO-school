@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { gsap } from "gsap";
+import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Users, BookOpen, HeartHandshake } from "lucide-react";
 import { LogoLockup } from "@/components/Logo";
@@ -9,24 +8,12 @@ import { LogoLockup } from "@/components/Logo";
 type AccountType = "enseignant" | "eleve" | "parent" | null;
 
 export function VisitorsRegistration() {
-  const rootRef = useRef<HTMLDivElement>(null);
   const [selectedType, setSelectedType] = useState<AccountType>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap
-        .timeline({ defaults: { ease: "power3.out" } })
-        .from(".card-badge", { y: 12, opacity: 0, duration: 0.4 })
-        .from(".card-header", { y: 20, opacity: 0, duration: 0.55 }, "-=0.15")
-        .from(".account-type", { y: 15, opacity: 0, duration: 0.4, stagger: 0.1 }, "-=0.25");
-    }, rootRef);
-    return () => ctx.revert();
-  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,9 +66,9 @@ export function VisitorsRegistration() {
   ];
 
   return (
-    <div ref={rootRef} className="w-full max-w-2xl" suppressHydrationWarning>
+    <div className="w-full max-w-2xl">
       <div className="card-badge mb-8 flex justify-center">
-        <LogoLockup variant="light" />
+        <LogoLockup variant="light" className="gap-4" markClassName="h-16 w-16" />
       </div>
 
       <div className="rounded-2xl border border-primary-500/20 bg-gradient-to-br from-neutral-900/80 via-primary-950/60 to-neutral-900/80 p-8 shadow-2xl backdrop-blur">

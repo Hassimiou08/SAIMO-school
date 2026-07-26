@@ -11,16 +11,18 @@ export function LogoMark({ className = "h-9 w-9" }: { className?: string }) {
 export function LogoLockup({
   variant = "dark",
   className = "",
+  markClassName = "h-16 w-16",
 }: {
   variant?: "dark" | "light";
   className?: string;
+  markClassName?: string;
 }) {
   const textColor = variant === "dark" ? "text-navy-900" : "text-white";
   const subColor = variant === "dark" ? "text-ink-500" : "text-white/60";
 
   return (
     <div className={`flex items-center gap-3 ${className}`}>
-      <LogoMark />
+      <LogoMark className={markClassName} />
       <div className="flex flex-col leading-none">
         <span className={`font-display text-lg font-bold tracking-tight ${textColor}`}>
           SAIMO
