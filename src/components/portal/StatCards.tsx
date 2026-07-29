@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
-import { Users2, FileBadge2, CalendarCheck2, Wallet2, TrendingUp, TrendingDown } from "lucide-react";
+import { Users2, FileBadge2, CalendarCheck2, Wallet2 } from "lucide-react";
 
 const stats = [
   {
@@ -10,32 +10,36 @@ const stats = [
     label: "Élèves actifs",
     target: 1248,
     suffix: "",
-    trend: "+3,2 %",
-    up: true,
+    iconBg: "bg-blue-500",
+    cardBg: "bg-white",
+    borderColor: "border-neutral-200",
   },
   {
     icon: FileBadge2,
     label: "Bulletins générés",
     target: 312,
     suffix: "",
-    trend: "+18",
-    up: true,
+    iconBg: "bg-orange-500",
+    cardBg: "bg-white",
+    borderColor: "border-neutral-200",
   },
   {
     icon: CalendarCheck2,
     label: "Taux de présence",
     target: 96,
     suffix: "%",
-    trend: "-0,4 %",
-    up: false,
+    iconBg: "bg-blue-400",
+    cardBg: "bg-white",
+    borderColor: "border-neutral-200",
   },
   {
     icon: Wallet2,
     label: "Paiements du mois",
     target: 78,
     suffix: "%",
-    trend: "+5,1 %",
-    up: true,
+    iconBg: "bg-orange-400",
+    cardBg: "bg-white",
+    borderColor: "border-neutral-200",
   },
 ];
 
@@ -44,61 +48,37 @@ export function StatCards() {
   const numberRefs = useRef<(HTMLSpanElement | null)[]>([]);
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.from(".stat-card", {
-        y: 16,
-        opacity: 0,
-        duration: 0.5,
-        stagger: 0.08,
+    // Animation GSAP uniquement pour l'incrémentation des nombres
+    numberRefs.current.forEach((el, i) => {
+      if (!el) return;
+      const counter = { val: 0 };
+      gsap.to(counter, {
+        val: stats[i].target,
+        duration: 1.2,
+        delay: 0.1,
         ease: "power2.out",
+        onUpdate: () => {
+          el.textContent = Math.round(counter.val).toString();
+        },
       });
-
-      numberRefs.current.forEach((el, i) => {
-        if (!el) return;
-        const counter = { val: 0 };
-        gsap.to(counter, {
-          val: stats[i].target,
-          duration: 1.2,
-          delay: 0.25 + i * 0.1,
-          ease: "power2.out",
-          onUpdate: () => {
-            el.textContent = Math.round(counter.val).toString();
-          },
-        });
-      });
-    }, rootRef);
-    return () => ctx.revert();
+    });
   }, []);
 
   return (
-    <div ref={rootRef} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div ref={rootRef} className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
       {stats.map((stat, i) => (
         <div
           key={stat.label}
-          className="stat-card rounded-2xl border border-navy-900/5 bg-white p-5"
+          className={`rounded-2xl border ${stat.borderColor} ${stat.cardBg} p-6 shadow-sm`}
         >
-          <div className="flex items-center justify-between">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-navy-950">
-              <stat.icon className="h-5 w-5 text-teal-300" />
-            </div>
-            <span
-              className={`flex items-center gap-1 text-xs font-medium ${
-                stat.up ? "text-teal-600" : "text-red-500"
-              }`}
-            >
-              {stat.up ? (
-                <TrendingUp className="h-3 w-3" />
-              ) : (
-                <TrendingDown className="h-3 w-3" />
-              )}
-              {stat.trend}
-            </span>
+          <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${stat.iconBg}`}>
+            <stat.icon className="h-5 w-5 text-white" />
           </div>
-          <p className="mt-4 font-mono text-2xl font-medium text-navy-900">
+          <p className="mt-5 font-display text-3xl font-black text-neutral-900">
             <span ref={(el) => { numberRefs.current[i] = el; }}>0</span>
             {stat.suffix}
           </p>
-          <p className="mt-1 text-xs text-ink-500">{stat.label}</p>
+          <p className="mt-1 text-sm font-medium text-neutral-500">{stat.label}</p>
         </div>
       ))}
     </div>

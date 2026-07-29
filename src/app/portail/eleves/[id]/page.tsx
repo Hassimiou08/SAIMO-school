@@ -11,15 +11,17 @@ export function generateStaticParams() {
   return students.map((s) => ({ id: s.id }));
 }
 
-export function generateMetadata({ params }: { params: { id: string } }): Metadata {
-  const student = getStudent(params.id);
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const student = getStudent(id);
   return {
     title: student ? `${student.firstName} ${student.lastName} — SAIMO` : "Élève introuvable — SAIMO",
   };
 }
 
-export default function EleveDetailPage({ params }: { params: { id: string } }) {
-  const student = getStudent(params.id);
+export default async function EleveDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const student = getStudent(id);
 
   if (!student) {
     notFound();
