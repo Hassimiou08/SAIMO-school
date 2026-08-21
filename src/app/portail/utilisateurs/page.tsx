@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, UserPlus, ShieldAlert } from "lucide-react";
-import { utilisateurs } from "@/lib/mock-admin";
+import { Plus, UserPlus, ShieldAlert, X } from "lucide-react";
+import { utilisateurs as mockUtilisateurs } from "@/lib/mock-admin";
 import { Sidebar } from "@/components/portal/Sidebar";
 import { Topbar } from "@/components/portal/Topbar";
 
 export default function UtilisateursPage() {
+  const [data, setData] = useState(mockUtilisateurs);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newUser, setNewUser] = useState({ nom: "", email: "", role: "Enseignant" });
   return (
     <div className="min-h-screen bg-paper-100">
       <Sidebar />
@@ -18,7 +21,7 @@ export default function UtilisateursPage() {
               <h1 className="font-display text-2xl font-bold tracking-tight text-navy-900">Utilisateurs & Rôles</h1>
               <p className="mt-1 text-sm text-ink-500">Gérez les accès du personnel à la plateforme SAIMO.</p>
             </div>
-            <button className="inline-flex items-center gap-2 self-start rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 transition">
+            <button onClick={() => setIsModalOpen(true)} className="inline-flex items-center gap-2 self-start rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 transition">
               <UserPlus className="h-4 w-4" /> Inviter un utilisateur
             </button>
           </div>
@@ -35,7 +38,7 @@ export default function UtilisateursPage() {
                 </tr>
               </thead>
               <tbody className="divide-y-2 divide-neutral-200">
-                {utilisateurs.map(u => (
+                {data.map(u => (
                   <tr key={u.id} className="hover:bg-blue-50/40 transition">
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
@@ -69,6 +72,60 @@ export default function UtilisateursPage() {
           </div>
         </main>
       </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/50 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-bold text-neutral-900">Inviter un utilisateur</h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-neutral-400 hover:text-neutral-700">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-neutral-700">Nom complet</label>
+                <input type="text" value={newUser.nom} onChange={e => setNewUser({...newUser, nom: e.target.value})} placeholder="Ex: Fatoumata Bah" className="mt-1 w-full rounded-xl border border-neutral-200 px-4 py-2 text-sm outline-none focus:border-blue-400" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-neutral-700">Adresse email</label>
+                <input type="email" value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})} placeholder="Ex: f.bah@saimo.com" className="mt-1 w-full rounded-xl border border-neutral-200 px-4 py-2 text-sm outline-none focus:border-blue-400" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-neutral-700">Rôle d'accès</label>
+                <select value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value})} className="mt-1 w-full rounded-xl border border-neutral-200 px-4 py-2 text-sm outline-none focus:border-blue-400">
+                  <option>Admin_Super</option>
+                  <option>Admin_Scolarite</option>
+                  <option>Comptable</option>
+                  <option>Enseignant</option>
+                </select>
+              </div>
+
+              <div className="mt-6 flex justify-end gap-3">
+                <button onClick={() => setIsModalOpen(false)} className="rounded-xl px-4 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100">Annuler</button>
+                <button
+                  onClick={() => {
+                    setData([{
+                      id: Date.now().toString(),
+                      nom: newUser.nom,
+                      email: newUser.email,
+                      role: newUser.role as any,
+                      statut: "Actif",
+                      dernierAcces: new Date().toISOString()
+                    }, ...data]);
+                    setIsModalOpen(false);
+                    setNewUser({ nom: "", email: "", role: "Enseignant" });
+                  }}
+                  className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700"
+                >
+                  Envoyer l'invitation
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

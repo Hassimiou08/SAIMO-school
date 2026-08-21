@@ -25,10 +25,6 @@ export default function PaiementsPage() {
                 Suivi des frais de scolarité, encaissements et états des paiements.
               </p>
             </div>
-            <button className="inline-flex items-center gap-2 self-start rounded-full bg-green-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-green-700 shadow-md shadow-green-600/20">
-              <Receipt className="h-4 w-4" />
-              Nouveau paiement
-            </button>
           </div>
           <PaiementsTable />
         </main>

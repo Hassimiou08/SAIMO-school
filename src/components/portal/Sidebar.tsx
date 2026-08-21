@@ -10,7 +10,7 @@ import {
   Wallet2, Receipt, Tag,
   Megaphone, Sparkles,
   BarChart3, ShieldAlert, UserCog,
-  Settings, LogOut,
+  Settings, LogOut, MessageSquare
 } from "lucide-react";
 import { LogoMark } from "@/components/Logo";
 
@@ -52,6 +52,7 @@ const NAV_SECTIONS = [
   {
     label: "Communication",
     items: [
+      { icon: MessageSquare, label: "Messagerie", href: "/portail/messagerie" },
       { icon: Megaphone, label: "Annonces",     href: "/portail/annonces" },
       { icon: Sparkles,  label: "Assistant IA", href: "/portail/ia" },
     ],
