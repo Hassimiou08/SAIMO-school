@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Search, Send, MessageSquare, Circle } from "lucide-react";
+import { Search, Send, MessageSquare, Circle, Phone, Video } from "lucide-react";
 import { ParentSidebar } from "@/components/parent/ParentSidebar";
 import { ParentTopbar } from "@/components/parent/ParentTopbar";
 import { type Message, type Conversation } from "@/lib/mock-admin";
@@ -135,15 +135,34 @@ export default function ParentMessageriePage() {
             <div className="flex-1 flex flex-col min-w-0">
               {activeConv && (
                 <>
-                  <div className="flex items-center gap-4 px-6 py-4 border-b border-neutral-100 bg-white">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-white font-bold text-sm">
-                      {activeConv.contactName.split(" ").map(p => p[0]).join("").slice(0, 2).toUpperCase()}
+                  <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 bg-white">
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-white font-bold text-sm">
+                        {activeConv.contactName.split(" ").map(p => p[0]).join("").slice(0, 2).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-bold text-neutral-900">{activeConv.contactName}</p>
+                        <p className="flex items-center gap-1.5 text-xs text-emerald-500 font-medium">
+                          <Circle className="h-2 w-2 fill-emerald-500" /> Disponible
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-bold text-neutral-900">{activeConv.contactName}</p>
-                      <p className="flex items-center gap-1.5 text-xs text-emerald-500 font-medium">
-                        <Circle className="h-2 w-2 fill-emerald-500" /> Disponible
-                      </p>
+                    
+                    {/* Actions d'appel */}
+                    <div className="flex items-center gap-2">
+                      <a 
+                        href="tel:+224620000000" 
+                        title="Appeler (Audio)"
+                        className="flex h-9 w-9 items-center justify-center rounded-full text-emerald-600 hover:bg-emerald-50 transition"
+                      >
+                        <Phone className="h-4 w-4" />
+                      </a>
+                      <button 
+                        title="Appeler (Video)"
+                        className="flex h-9 w-9 items-center justify-center rounded-full text-emerald-600 hover:bg-emerald-50 transition"
+                      >
+                        <Video className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
 

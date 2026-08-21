@@ -40,7 +40,7 @@ export function VisitorsRegistration() {
     setTimeout(() => {
       setIsLoading(false);
       window.localStorage.setItem("saimo-portal-role", "parent");
-      window.location.href = `/portail`;
+      window.location.href = `/parent`;
     }, 1500);
   };
 
