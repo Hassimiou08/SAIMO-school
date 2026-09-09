@@ -498,10 +498,13 @@ export async function getSyntheseRapports(): Promise<SyntheseRapports> {
     where: { id: anneeScolaireId },
     select: { libelle: true, dateDebut: true, dateFin: true },
   });
-  const debutAnnee = annee?.dateDebut ?? new Date(new Date().getFullYear(), 0, 1);
-  const finAnnee = annee?.dateFin ?? new Date();
 
   const now = new Date();
+  const debutAnnee = annee?.dateDebut ?? new Date(now.getFullYear(), 0, 1);
+  // L'année active dont la date de fin est déjà passée est simplement non
+  // clôturée : on étend la fenêtre jusqu'à aujourd'hui pour ne rien masquer.
+  const finAnnee =
+    annee?.dateFin && annee.dateFin > now ? annee.dateFin : now;
   const dm = debutDeMois(now);
   const fm = finDeMois(now);
 
