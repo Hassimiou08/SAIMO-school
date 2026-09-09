@@ -306,23 +306,25 @@ export function SalairesManager({ data }: { data: ListeSalaires }) {
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center justify-end gap-2">
-                    <button
-                      onClick={() => ouvrirEdition(s)}
-                      title="Modifier les montants"
-                      className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-bold text-neutral-600 shadow-sm transition hover:bg-neutral-50"
-                    >
-                      <Pencil className="h-3.5 w-3.5" /> Modifier
-                    </button>
                     {s.statut === "attente" && (
-                      <button
-                        onClick={() => {
-                          setPaiement({ ids: [s.id], total: s.netAPayer });
-                          setMode("virement");
-                        }}
-                        className="rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-700 shadow-sm transition hover:bg-neutral-50"
-                      >
-                        Payer
-                      </button>
+                      <>
+                        <button
+                          onClick={() => ouvrirEdition(s)}
+                          title="Modifier les montants"
+                          className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-bold text-neutral-600 shadow-sm transition hover:bg-neutral-50"
+                        >
+                          <Pencil className="h-3.5 w-3.5" /> Modifier
+                        </button>
+                        <button
+                          onClick={() => {
+                            setPaiement({ ids: [s.id], total: s.netAPayer });
+                            setMode("virement");
+                          }}
+                          className="rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-700 shadow-sm transition hover:bg-neutral-50"
+                        >
+                          Payer
+                        </button>
+                      </>
                     )}
                   </div>
                 </td>
@@ -380,12 +382,6 @@ export function SalairesManager({ data }: { data: ListeSalaires }) {
             className="space-y-4"
           >
             {!edition && <input type="hidden" name="mois" value={data.mois} />}
-            {edition?.statut === "paye" && (
-              <p className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-700">
-                Cette ligne est déjà réglée. La correction la repassera «&nbsp;en
-                attente&nbsp;» pour un nouveau règlement au bon montant.
-              </p>
-            )}
             <div className="grid grid-cols-2 gap-4">
               <Champ
                 label="Nom de l'employé"

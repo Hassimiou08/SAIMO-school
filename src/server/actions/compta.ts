@@ -233,8 +233,8 @@ export async function actionCreerSalaire(
 }
 
 /**
- * Corrige les montants d'une ligne de paie. Si elle était déjà réglée,
- * elle repasse « en attente » (le montant enregistré était erroné → à re-payer).
+ * Corrige les montants d'une ligne de paie encore « en attente ».
+ * Une ligne déjà réglée n'est plus modifiable.
  */
 export async function actionModifierSalaire(
   id: string,
@@ -248,6 +248,11 @@ export async function actionModifierSalaire(
       where: { id, etablissementId: ctx.etablissementId },
     });
     if (!existant) return { succes: false, erreur: "Ligne de paie introuvable" };
+    if (existant.statut === "paye")
+      return {
+        succes: false,
+        erreur: "Cette ligne est déjà réglée et ne peut plus être modifiée.",
+      };
 
     const parsed = schemaModifSalaire.safeParse({
       employeNom: s(formData.get("employeNom")),
@@ -266,7 +271,6 @@ export async function actionModifierSalaire(
       };
     }
     const d = parsed.data;
-    const etaitPaye = existant.statut === "paye";
 
     await prisma.salaire.update({
       where: { id },
@@ -280,9 +284,6 @@ export async function actionModifierSalaire(
         primes: d.primes,
         retenues: d.retenues,
         netAPayer: calculerNet(d),
-        ...(etaitPaye
-          ? { statut: "attente", modePaiement: null, datePaiement: null }
-          : {}),
       },
     });
     await audit({
@@ -291,14 +292,8 @@ export async function actionModifierSalaire(
       action: AuditAction.UPDATE,
       entite: "Salaire",
       entiteId: id,
-      avant: {
-        netAPayer: Number(existant.netAPayer),
-        statut: existant.statut,
-      },
-      apres: {
-        netAPayer: calculerNet(d),
-        statut: etaitPaye ? "attente (corrigé)" : existant.statut,
-      },
+      avant: { netAPayer: Number(existant.netAPayer) },
+      apres: { netAPayer: calculerNet(d) },
     });
     revalidatePath("/compta/salaires");
     revalidatePath("/compta");
