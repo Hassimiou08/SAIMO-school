@@ -1,10 +1,10 @@
 "use client";
 
 import { useActionState } from "react";
-import { actionConnexion } from "@/server/actions/auth";
+import { actionConnexionPersonnel } from "@/server/actions/auth";
 
 export default function LoginPage() {
-  const [errorMessage, dispatch] = useActionState(actionConnexion, undefined);
+  const [errorMessage, dispatch] = useActionState(actionConnexionPersonnel, undefined);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">

@@ -1,88 +1,102 @@
-"use client";
+import { Users2, GraduationCap, Wallet2, TrendingUp, CalendarX2, FileBadge2 } from "lucide-react";
+import type { StatsDashboard, MoyenneClasse } from "@/server/dal/dashboard";
+import type { RapportCaisseDTO } from "@/server/dal/finance";
+import type { StatsAbsences } from "@/server/dal/absences";
+import { formatGNF } from "@/lib/format";
 
-import { BarChart3, TrendingUp, Users, Wallet2, BookOpen, GraduationCap } from "lucide-react";
+const MODE_LABEL: Record<string, string> = {
+  especes: "Espèces", mobile: "Mobile Money", virement: "Virement", cheque: "Chèque",
+};
 
-export function ReportsDashboard() {
+export function ReportsDashboard({
+  stats,
+  moyennes,
+  caisse,
+  absences,
+  periode,
+}: {
+  stats: StatsDashboard;
+  moyennes: { classes: MoyenneClasse[]; moyenneGenerale: number | null };
+  caisse: RapportCaisseDTO;
+  absences: StatsAbsences;
+  periode: string;
+}) {
+  const kpis = [
+    { icon: Users2, label: "Élèves actifs", value: String(stats.elevesActifs) },
+    { icon: GraduationCap, label: "Enseignants", value: String(stats.enseignantsActifs) },
+    { icon: TrendingUp, label: "Recouvrement", value: `${stats.tauxRecouvrement}%` },
+    { icon: CalendarX2, label: "Absences (non just.)", value: String(absences.nonJustifiees) },
+    { icon: FileBadge2, label: "Bulletins générés", value: String(stats.bulletinsGeneres) },
+    { icon: Wallet2, label: "Recettes année", value: formatGNF(stats.recettesTotales) },
+  ];
+
+  const maxMoy = 20;
+
   return (
-    <div className="space-y-6">
-      {/* KPI Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { title: "Taux de réussite", value: "86%", trend: "+2.4%", icon: TrendingUp, color: "text-green-600", bg: "bg-green-100" },
-          { title: "Effectif total", value: "1,248", trend: "+12", icon: Users, color: "text-blue-600", bg: "bg-blue-100" },
-          { title: "Moyenne Générale", value: "13.8/20", trend: "+0.3", icon: BookOpen, color: "text-purple-600", bg: "bg-purple-100" },
-          { title: "Recouvrement", value: "92%", trend: "-1.5%", icon: Wallet2, color: "text-orange-600", bg: "bg-orange-100" },
-        ].map((kpi, i) => (
-          <div key={i} className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${kpi.bg}`}>
-                <kpi.icon className={`h-5 w-5 ${kpi.color}`} />
+    <div className="space-y-8">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {kpis.map((k) => (
+          <div key={k.label} className="rounded-2xl border border-neutral-200 bg-white p-5">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600"><k.icon className="h-5 w-5" /></span>
+              <div>
+                <p className="font-display text-xl font-black text-neutral-900">{k.value}</p>
+                <p className="text-xs text-neutral-500">{k.label}</p>
               </div>
-              <span className={`text-xs font-semibold ${kpi.trend.startsWith("+") ? "text-green-600" : "text-red-500"}`}>
-                {kpi.trend}
-              </span>
             </div>
-            <p className="mt-4 text-sm font-medium text-neutral-500">{kpi.title}</p>
-            <p className="mt-1 text-2xl font-bold text-neutral-900">{kpi.value}</p>
           </div>
         ))}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Performance par Niveau (Barres) */}
-        <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-neutral-800">Performance par Niveau</h2>
-            <BarChart3 className="h-5 w-5 text-neutral-400" />
-          </div>
-          <div className="space-y-4">
-            {[
-              { label: "Primaire", value: 88, color: "bg-blue-500" },
-              { label: "Collège", value: 76, color: "bg-indigo-500" },
-              { label: "Lycée", value: 82, color: "bg-purple-500" },
-            ].map((bar, i) => (
-              <div key={i}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="font-medium text-neutral-700">{bar.label}</span>
-                  <span className="text-neutral-500">{bar.value}%</span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-100">
-                  <div className={`h-full ${bar.color} rounded-full`} style={{ width: `${bar.value}%` }} />
+        <div className="rounded-2xl border border-neutral-200 bg-white p-6">
+          <h3 className="font-display text-sm font-bold text-navy-900">Niveau par classe {moyennes.moyenneGenerale != null && `(moy. ${moyennes.moyenneGenerale.toFixed(1)}/20)`}</h3>
+          <div className="mt-4 space-y-2.5">
+            {moyennes.classes.filter((c) => c.value != null).map((c) => (
+              <div key={c.nom}>
+                <div className="flex justify-between text-xs text-neutral-500"><span>{c.nom}</span><span className="font-mono">{c.value!.toFixed(1)}/20</span></div>
+                <div className="mt-1 h-2 rounded-full bg-neutral-100">
+                  <div className="h-full rounded-full bg-blue-500" style={{ width: `${(c.value! / maxMoy) * 100}%` }} />
                 </div>
               </div>
             ))}
+            {moyennes.classes.every((c) => c.value == null) && <p className="text-sm text-neutral-400">Aucun bulletin validé.</p>}
           </div>
         </div>
 
-        {/* Répartition des statuts de paiement */}
-        <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-neutral-800">État des Recouvrements</h2>
-            <Wallet2 className="h-5 w-5 text-neutral-400" />
-          </div>
-          <div className="flex items-center justify-center gap-8">
-            {/* Custom Pie Chart representation using CSS conic-gradient */}
-            <div className="relative h-32 w-32 rounded-full" style={{ background: "conic-gradient(#22c55e 0% 75%, #3b82f6 75% 90%, #ef4444 90% 100%)" }}>
-              <div className="absolute inset-2 rounded-full bg-white flex items-center justify-center">
-                <span className="text-xl font-bold text-neutral-800">75%</span>
+        <div className="rounded-2xl border border-neutral-200 bg-white p-6">
+          <h3 className="font-display text-sm font-bold text-navy-900">Caisse — {periode}</h3>
+          <p className="mt-2 font-display text-2xl font-black text-green-600">{formatGNF(caisse.total)}</p>
+          <p className="text-xs text-neutral-500">{caisse.nombre} encaissement{caisse.nombre > 1 ? "s" : ""}</p>
+          <div className="mt-4 space-y-2">
+            {caisse.parMode.map((m) => (
+              <div key={m.mode} className="flex items-center justify-between text-sm">
+                <span className="text-neutral-600">{MODE_LABEL[m.mode] ?? m.mode}</span>
+                <span className="font-mono font-semibold text-neutral-800">{formatGNF(m.total)} <span className="text-xs text-neutral-400">({m.nombre})</span></span>
               </div>
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-green-500" />
-                <span className="text-sm text-neutral-600">Soldé (75%)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-blue-500" />
-                <span className="text-sm text-neutral-600">Partiel (15%)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-red-500" />
-                <span className="text-sm text-neutral-600">Impayé (10%)</span>
-              </div>
-            </div>
+            ))}
+            {caisse.parMode.length === 0 && <p className="text-sm text-neutral-400">Aucun encaissement sur la période.</p>}
           </div>
         </div>
+      </div>
+
+      <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden">
+        <div className="border-b border-neutral-100 p-4 text-sm font-semibold text-neutral-700">Derniers encaissements</div>
+        <table className="w-full text-left text-sm">
+          <thead><tr className="border-b border-neutral-100 bg-neutral-50/50 text-xs uppercase text-neutral-500"><th className="px-5 py-3">Reçu</th><th className="px-5 py-3">Élève</th><th className="px-5 py-3">Montant</th><th className="px-5 py-3">Mode</th><th className="px-5 py-3">Date</th></tr></thead>
+          <tbody className="divide-y divide-neutral-100">
+            {caisse.lignes.slice(0, 15).map((l) => (
+              <tr key={l.id}>
+                <td className="px-5 py-2.5 font-mono text-xs text-neutral-500">{l.numeroRecu}</td>
+                <td className="px-5 py-2.5 text-neutral-800">{l.eleve}</td>
+                <td className="px-5 py-2.5 font-mono">{formatGNF(l.montant)}</td>
+                <td className="px-5 py-2.5 text-xs text-neutral-600">{MODE_LABEL[l.mode] ?? l.mode}</td>
+                <td className="px-5 py-2.5 text-xs text-neutral-500">{l.date}</td>
+              </tr>
+            ))}
+            {caisse.lignes.length === 0 && <tr><td colSpan={5} className="px-5 py-8 text-center text-neutral-500">Aucun encaissement.</td></tr>}
+          </tbody>
+        </table>
       </div>
     </div>
   );

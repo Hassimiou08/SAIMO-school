@@ -10,9 +10,10 @@ import {
   Wallet2, Receipt, Tag,
   Megaphone, Sparkles,
   BarChart3, ShieldAlert, UserCog,
-  Settings, LogOut, MessageSquare
+  Settings, MessageSquare, UserPlus, UserCircle2
 } from "lucide-react";
 import { LogoMark } from "@/components/Logo";
+import { LogoutButton } from "@/components/auth/LogoutButton";
 
 const NAV_SECTIONS = [
   {
@@ -25,6 +26,7 @@ const NAV_SECTIONS = [
     label: "Académique",
     items: [
       { icon: Users2,       label: "Élèves",          href: "/portail/eleves" },
+      { icon: UserPlus,     label: "Pré-inscriptions", href: "/portail/preinscriptions" },
       { icon: GraduationCap,label: "Enseignants",      href: "/portail/enseignants" },
       { icon: School,       label: "Classes",          href: "/portail/classes" },
       { icon: BookMarked,   label: "Matières",         href: "/portail/matieres" },
@@ -44,9 +46,10 @@ const NAV_SECTIONS = [
   {
     label: "Finance",
     items: [
-      { icon: Wallet2,  label: "Paiements",       href: "/portail/paiements" },
-      { icon: Receipt,  label: "Reçus",            href: "/portail/recus" },
-      { icon: Tag,      label: "Remises & Bourses",href: "/portail/remises" },
+      { icon: Wallet2,  label: "Paiements",         href: "/portail/paiements" },
+      { icon: CalendarRange, label: "Échéances & Frais", href: "/portail/echeances" },
+      { icon: Receipt,  label: "Reçus",             href: "/portail/recus" },
+      { icon: Tag,      label: "Remises & Bourses",  href: "/portail/remises" },
     ],
   },
   {
@@ -137,6 +140,17 @@ export function Sidebar() {
         {/* Bas de sidebar */}
         <div className="flex-shrink-0 border-t border-white/15 p-3 space-y-1">
           <Link
+            href="/portail/profil"
+            className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors ${
+              pathname === "/portail/profil"
+                ? "bg-white/20 text-white shadow-md"
+                : "text-white/70 hover:bg-white/15 hover:text-white"
+            }`}
+          >
+            <UserCircle2 className="h-[18px] w-[18px]" />
+            Mon profil
+          </Link>
+          <Link
             href="/portail/parametres"
             className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors ${
               pathname === "/portail/parametres"
@@ -147,13 +161,7 @@ export function Sidebar() {
             <Settings className="h-[18px] w-[18px]" />
             Paramètres
           </Link>
-          <a
-            href="/connexion"
-            className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white/70 transition-colors hover:bg-red-500/20 hover:text-red-200"
-          >
-            <LogOut className="h-[18px] w-[18px]" />
-            Déconnexion
-          </a>
+          <LogoutButton className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white/70 transition-colors hover:bg-red-500/20 hover:text-red-200" />
         </div>
       </div>
     </aside>

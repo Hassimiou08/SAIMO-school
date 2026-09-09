@@ -19,6 +19,7 @@ import {
   Download,
   UploadCloud,
   ChevronRight,
+  ChevronLeft,
   ArrowRight,
   CheckCircle2,
   FileText,
@@ -33,29 +34,80 @@ if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
+type Config = {
+  etablissementId: string;
+  etablissementNom: string;
+  anneeScolaireId: string;
+  anneeLibelle: string;
+  niveaux: { id: string; nom: string; cycle: string }[];
+};
+
+const CHAMP =
+  "w-full p-3 bg-paper-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-blue-600 outline-none transition-all text-sm";
+
 export default function PreinscriptionPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [step, setStep] = useState(1);
-  const [enfants, setEnfants] = useState([1]); // Mock array of children IDs
-  const [activeEnfant, setActiveEnfant] = useState(0);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [config, setConfig] = useState<Config | null>(null);
+  const [reference, setReference] = useState<string | null>(null);
+  const [envoi, setEnvoi] = useState(false);
+  const [erreur, setErreur] = useState("");
+  const [form, setForm] = useState({
+    prenomEleve: "", nomEleve: "", dateNaissance: "", sexe: "", niveauId: "",
+    prenomTuteur: "", nomTuteur: "", telephone: "", email: "", message: "",
+  });
+  const maj = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
-  const handleSubmit = () => {
-    setIsSubmitted(true);
-    window.scrollTo({ top: 300, behavior: "smooth" });
-    // Animation de succès
-    setTimeout(() => {
-      gsap.fromTo(".success-el", { scale: 0.8, opacity: 0, y: 20 }, { scale: 1, opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "back.out(1.5)" });
-    }, 100);
-  };
+  useEffect(() => {
+    fetch("/api/pre-inscriptions")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((c) => c && setConfig(c))
+      .catch(() => {});
+  }, []);
 
-  const handleAddEnfant = () => {
-    setEnfants([...enfants, enfants.length + 1]);
-    setActiveEnfant(enfants.length);
-    // Petite animation sympa pour le nouvel onglet
-    setTimeout(() => {
-      gsap.fromTo(".enfant-tab-new", { scale: 0.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.3, ease: "back.out(2)" });
-    }, 50);
+  const handleSubmit = async () => {
+    setErreur("");
+    if (!config) { setErreur("Configuration indisponible, réessayez plus tard."); return; }
+    if (!form.prenomEleve.trim() || !form.nomEleve.trim() || !form.telephone.trim()) {
+      setErreur("Prénom, nom de l'élève et téléphone du contact sont obligatoires.");
+      setStep(1);
+      return;
+    }
+    setEnvoi(true);
+    try {
+      const res = await fetch("/api/pre-inscriptions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          etablissementId: config.etablissementId,
+          anneeScolaireId: config.anneeScolaireId,
+          niveauId: form.niveauId || undefined,
+          niveauSouhaite: config.niveaux.find((n) => n.id === form.niveauId)?.nom,
+          prenomEleve: form.prenomEleve,
+          nomEleve: form.nomEleve,
+          dateNaissance: form.dateNaissance || undefined,
+          sexe: form.sexe || undefined,
+          prenomTuteur: form.prenomTuteur || undefined,
+          nomTuteur: form.nomTuteur || undefined,
+          telephone: form.telephone,
+          email: form.email || undefined,
+          message: form.message || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setErreur(data.erreur ?? "Échec de l'envoi."); return; }
+      setReference(data.reference);
+      setIsSubmitted(true);
+      window.scrollTo({ top: 300, behavior: "smooth" });
+      setTimeout(() => {
+        gsap.fromTo(".success-el", { scale: 0.8, opacity: 0, y: 20 }, { scale: 1, opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "back.out(1.5)" });
+      }, 100);
+    } catch {
+      setErreur("Erreur réseau. Réessayez.");
+    } finally {
+      setEnvoi(false);
+    }
   };
 
   useEffect(() => {
@@ -204,17 +256,19 @@ export default function PreinscriptionPage() {
                   <CheckCircle2 className="h-12 w-12" />
                 </div>
                 <h2 className="success-el font-display text-4xl font-bold text-navy-900 mb-4">Demande envoyée avec succès !</h2>
-                <p className="success-el text-slate-600 text-lg max-w-xl mx-auto mb-10 leading-relaxed">
-                  Nous avons bien reçu votre demande de pré-inscription pour <strong className="text-navy-900">{enfants.length} enfant(s)</strong>.
-                  Notre équipe d'admission va examiner votre dossier et vous contactera sous <strong className="text-navy-900">48 heures ouvrées</strong>.
+                <p className="success-el text-slate-600 text-lg max-w-xl mx-auto mb-4 leading-relaxed">
+                  Nous avons bien reçu votre demande de pré-inscription pour <strong className="text-navy-900">{form.prenomEleve} {form.nomEleve}</strong>.
+                  Notre équipe d&apos;admission va examiner votre dossier et vous contactera.
                 </p>
+                {reference && (
+                  <p className="success-el mb-10 rounded-xl border border-blue-100 bg-blue-50 px-5 py-3 text-sm text-blue-800">
+                    Référence : <strong className="font-mono">{reference}</strong> — conservez-la pour tout suivi.
+                  </p>
+                )}
                 <div className="success-el flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-                  <button className="bg-white border border-neutral-200 text-navy-900 font-bold py-3.5 px-8 rounded-xl hover:bg-paper-50 transition-colors shadow-sm flex items-center justify-center gap-2">
-                    <Download className="h-4 w-4" /> Récapitulatif PDF
-                  </button>
-                  <button onClick={() => window.location.reload()} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-8 rounded-xl transition-all shadow-md shadow-blue-600/30 hover:scale-[1.02]">
-                    Retour à l'accueil
-                  </button>
+                  <a href="/" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-8 rounded-xl transition-all shadow-md shadow-blue-600/30 hover:scale-[1.02] text-center">
+                    Retour à l&apos;accueil
+                  </a>
                 </div>
               </div>
             ) : (
@@ -264,253 +318,79 @@ export default function PreinscriptionPage() {
 
             {/* RIGHT SIDE: ACTIVE STEP CONTENT */}
             <div className="w-full md:w-2/3 p-6 md:p-10 step-content relative">
-              {/* STEP 1: ENFANT */}
               {step === 1 && (
                 <div>
-                  <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-                    <div>
-                      <h2 className="font-display text-2xl font-bold text-navy-900 mb-1">Informations de l'élève</h2>
-                      <p className="text-slate-500 text-sm">Veuillez renseigner les informations concernant l'enfant à inscrire.</p>
-                    </div>
-                    
-                    {/* Multi-enfants Tabs */}
-                    <div className="flex flex-wrap items-center gap-2">
-                      {enfants.map((_, index) => (
-                        <button 
-                          key={index} 
-                          onClick={() => setActiveEnfant(index)}
-                          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeEnfant === index ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'bg-paper-50 text-slate-500 hover:bg-neutral-100 border border-neutral-200'} ${index === enfants.length - 1 ? 'enfant-tab-new' : ''}`}
-                        >
-                          Enfant {index + 1}
-                        </button>
+                  <h2 className="font-display text-2xl font-bold text-navy-900 mb-1">Informations de l&apos;élève</h2>
+                  <p className="text-slate-500 text-sm mb-6">
+                    {config ? `${config.etablissementNom} — année ${config.anneeLibelle}` : "Chargement…"}
+                  </p>
+                  <div className="grid md:grid-cols-2 gap-3">
+                    <input className={CHAMP} placeholder="Prénom de l'élève *" value={form.prenomEleve} onChange={(e) => maj("prenomEleve", e.target.value)} />
+                    <input className={CHAMP} placeholder="Nom de l'élève *" value={form.nomEleve} onChange={(e) => maj("nomEleve", e.target.value)} />
+                    <input type="date" className={CHAMP} value={form.dateNaissance} onChange={(e) => maj("dateNaissance", e.target.value)} />
+                    <select className={CHAMP} value={form.sexe} onChange={(e) => maj("sexe", e.target.value)}>
+                      <option value="">Sexe</option>
+                      <option value="M">Masculin</option>
+                      <option value="F">Féminin</option>
+                    </select>
+                    <select className={`${CHAMP} md:col-span-2`} value={form.niveauId} onChange={(e) => maj("niveauId", e.target.value)}>
+                      <option value="">Niveau souhaité</option>
+                      {config?.niveaux.map((n) => (
+                        <option key={n.id} value={n.id}>{n.nom} — {n.cycle}</option>
                       ))}
-                      <button onClick={handleAddEnfant} className="px-3 py-2 rounded-xl text-xs font-bold text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100 transition-colors flex items-center gap-1">
-                        + Ajouter
-                      </button>
-                    </div>
+                    </select>
                   </div>
-                  
-                  <div className="space-y-6 animate-fade-in key={activeEnfant}">
-                    {/* Compact Layout: Photo + Fields */}
-                    <div className="border border-neutral-200 rounded-2xl p-5 md:p-6 bg-white shadow-sm hover:border-blue-200 transition-colors">
-                      <div className="flex flex-col md:flex-row gap-6 items-start">
-                        {/* Photo Upload (Minimalist) */}
-                        <div className="w-full md:w-[120px] flex-shrink-0 flex flex-col items-center gap-3">
-                          <div className="h-20 w-20 rounded-full border-2 border-dashed border-blue-300 bg-paper-50 flex items-center justify-center text-blue-500 cursor-pointer hover:bg-blue-50 transition-colors">
-                            <Camera className="h-6 w-6" />
-                          </div>
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider text-center">Photo <br/>(Optionnelle)</span>
-                        </div>
-
-                        {/* Info Grid (No labels, clean like Parent) */}
-                        <div className="flex-1 grid md:grid-cols-2 gap-3 w-full">
-                          <input type="text" className="w-full p-3 bg-paper-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-blue-600 outline-none transition-all text-sm" placeholder="Prénom (Ex: Ibrahim) *" />
-                          <input type="text" className="w-full p-3 bg-paper-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-blue-600 outline-none transition-all text-sm" placeholder="Nom (Ex: Soumah) *" />
-                          <input type="text" placeholder="Date de naissance *" onFocus={(e) => e.target.type = 'date'} onBlur={(e) => !e.target.value && (e.target.type = 'text')} className="w-full p-3 bg-paper-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-blue-600 outline-none transition-all text-sm" />
-                          <select defaultValue="" className="w-full p-3 bg-paper-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-blue-600 outline-none transition-all text-sm text-slate-600 appearance-none">
-                            <option value="" disabled>Sexe *</option>
-                            <option>Masculin</option>
-                            <option>Féminin</option>
-                          </select>
-                          <select defaultValue="" className="w-full p-3 bg-paper-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-blue-600 outline-none transition-all text-sm text-slate-600 appearance-none">
-                            <option value="" disabled>Niveau souhaité *</option>
-                            <option>Maternelle</option>
-                            <option>Primaire</option>
-                            <option>Collège</option>
-                            <option>Lycée</option>
-                          </select>
-                          <select defaultValue="" className="w-full p-3 bg-paper-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-blue-600 outline-none transition-all text-sm text-slate-600 appearance-none">
-                            <option value="" disabled>Classe souhaitée *</option>
-                            <option>Moyenne Section</option>
-                            <option>CP1</option>
-                            <option>CE1</option>
-                            <option>7ème Année</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* COMPACT OPTIONS GRID */}
-                    <div className="pt-2">
-                      <h3 className="font-bold text-navy-900 text-sm mb-3 flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.5)]"/> 
-                        Options pour cet enfant
-                      </h3>
-                      
-                      <div className="grid lg:grid-cols-2 gap-3">
-                        {/* Cantine */}
-                        <div className="border border-neutral-200 bg-white hover:border-blue-300 transition-colors rounded-xl p-3 flex gap-3 shadow-sm items-center">
-                          <input type="checkbox" className="h-4 w-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-600 cursor-pointer" />
-                          <div className="flex-1 flex justify-between items-center">
-                            <span className="font-bold text-navy-900 text-xs flex items-center gap-1.5"><Utensils className="h-3 w-3 text-orange-400"/> Cantine</span>
-                            <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded">400k / mois</span>
-                          </div>
-                        </div>
-
-                        {/* Transport */}
-                        <div className="border border-neutral-200 bg-white hover:border-blue-300 transition-colors rounded-xl p-3 flex gap-3 shadow-sm items-center">
-                          <input type="checkbox" className="h-4 w-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-600 cursor-pointer" />
-                          <div className="flex-1 flex items-center gap-3">
-                            <span className="font-bold text-navy-900 text-xs flex items-center gap-1.5"><Bus className="h-3 w-3 text-blue-500"/> Navette</span>
-                            <div className="flex gap-2 ml-auto">
-                              <label className="text-[10px] text-slate-600 cursor-pointer flex items-center gap-1"><input type="radio" name="transport" className="text-blue-600"/> 200k</label>
-                              <label className="text-[10px] text-slate-600 cursor-pointer flex items-center gap-1"><input type="radio" name="transport" className="text-blue-600"/> 350k</label>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Uniformes */}
-                        <div className="border border-neutral-200 bg-white hover:border-blue-300 transition-colors rounded-xl p-3 flex gap-3 shadow-sm items-center">
-                          <Shirt className="h-3.5 w-3.5 text-blue-600"/>
-                          <div className="flex-1 flex gap-3">
-                            <label className="flex items-center gap-1.5 text-[11px] text-slate-600 cursor-pointer">
-                              <input type="checkbox" className="rounded border-neutral-300 text-blue-600" /> Tenues (450k)
-                            </label>
-                            <label className="flex items-center gap-1.5 text-[11px] text-slate-600 cursor-pointer">
-                              <input type="checkbox" className="rounded border-neutral-300 text-blue-600" /> EPS (100k)
-                            </label>
-                          </div>
-                        </div>
-
-                        {/* Activités */}
-                        <div className="border border-neutral-200 bg-white hover:border-teal-300 transition-colors rounded-xl p-3 flex gap-3 shadow-sm items-center">
-                          <Medal className="h-3.5 w-3.5 text-teal-600"/>
-                          <div className="flex-1 flex gap-3">
-                            <label className="flex items-center gap-1.5 text-[11px] text-slate-600 cursor-pointer">
-                              <input type="checkbox" className="rounded border-neutral-300 text-teal-600" /> Karaté (200k)
-                            </label>
-                            <label className="flex items-center gap-1.5 text-[11px] text-slate-600 cursor-pointer">
-                              <input type="checkbox" className="rounded border-neutral-300 text-teal-600" /> Code (250k)
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="pt-2 flex flex-col-reverse sm:flex-row justify-between items-center gap-4">
-                      <button onClick={handleAddEnfant} className="text-blue-600 hover:text-blue-700 text-xs font-bold py-2.5 px-4 rounded-xl flex items-center gap-1.5 transition-colors bg-blue-50 hover:bg-blue-100 w-full sm:w-auto justify-center">
-                        + Inscrire un autre enfant
-                      </button>
-                      <button onClick={() => handleStepChange(2)} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-600/30 hover:scale-[1.02] text-sm">
-                        Étape suivante <ChevronRight className="h-4 w-4" />
-                      </button>
-                    </div>
+                  <div className="pt-6 flex justify-end">
+                    <button onClick={() => setStep(2)} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-xl flex items-center gap-2 transition-all shadow-md shadow-blue-600/30 text-sm">
+                      Étape suivante <ChevronRight className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               )}
 
-              {/* STEP 2: PARENT */}
               {step === 2 && (
                 <div>
-                  <h2 className="font-display text-2xl font-bold text-navy-900 mb-1">Informations du parent</h2>
-                  <p className="text-slate-500 text-sm mb-6">Veuillez renseigner les coordonnées des responsables légaux.</p>
-                  
-                  <div className="space-y-6">
-                    {/* Père */}
-                    <div className="border border-neutral-200 rounded-2xl p-5 md:p-6 bg-white shadow-sm hover:border-blue-200 transition-colors">
-                      <h3 className="font-bold text-navy-900 mb-4 flex items-center gap-2 text-sm"><User className="h-4 w-4 text-blue-600"/> Informations du Père</h3>
-                      <div className="grid md:grid-cols-2 gap-3">
-                        <input type="text" placeholder="Ex: Ibrahim" className="w-full p-3 bg-paper-50 border border-neutral-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-600 outline-none transition-all" />
-                        <input type="text" placeholder="Ex: Soumah" className="w-full p-3 bg-paper-50 border border-neutral-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-600 outline-none transition-all" />
-                        <input type="email" placeholder="Email (papa@exemple.com)" className="w-full p-3 bg-paper-50 border border-neutral-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-600 outline-none transition-all" />
-                        <input type="tel" placeholder="Téléphone (+224...)" className="w-full p-3 bg-paper-50 border border-neutral-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-600 outline-none transition-all" />
-                        <input type="text" placeholder="Profession" className="w-full p-3 bg-paper-50 border border-neutral-200 rounded-xl text-sm md:col-span-2 focus:ring-2 focus:ring-blue-600 outline-none transition-all" />
-                      </div>
-                    </div>
-
-                    {/* Mère */}
-                    <div className="border border-neutral-200 rounded-2xl p-5 md:p-6 bg-white shadow-sm hover:border-orange-200 transition-colors">
-                      <h3 className="font-bold text-navy-900 mb-4 flex items-center gap-2 text-sm"><User className="h-4 w-4 text-orange-500"/> Informations de la Mère</h3>
-                      <div className="grid md:grid-cols-2 gap-3">
-                        <input type="text" placeholder="Ex: Kadiatou" className="w-full p-3 bg-paper-50 border border-neutral-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all" />
-                        <input type="text" placeholder="Ex: Soumah" className="w-full p-3 bg-paper-50 border border-neutral-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all" />
-                        <input type="email" placeholder="Email (maman@exemple.com)" className="w-full p-3 bg-paper-50 border border-neutral-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all" />
-                        <input type="tel" placeholder="Téléphone (+224...)" className="w-full p-3 bg-paper-50 border border-neutral-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all" />
-                        <input type="text" placeholder="Profession" className="w-full p-3 bg-paper-50 border border-neutral-200 rounded-xl text-sm md:col-span-2 focus:ring-2 focus:ring-orange-500 outline-none transition-all" />
-                      </div>
-                    </div>
-
-                    {/* Addresse */}
-                    <div className="space-y-3 pt-4 border-t border-neutral-100">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Adresse de la famille</label>
-                        <input type="text" className="w-full p-3 bg-paper-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-blue-600 outline-none transition-all text-sm" placeholder="Quartier, ville, repère..." />
-                      </div>
-                    </div>
-
-                    <div className="pt-4 flex justify-between items-center">
-                      <button onClick={() => handleStepChange(1)} className="text-slate-500 hover:text-navy-900 text-sm font-bold py-2.5 px-4 rounded-xl flex items-center gap-2 transition-colors">
-                        <ChevronLeft className="h-4 w-4" /> Retour
-                      </button>
-                      <button onClick={() => handleStepChange(3)} className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold py-2.5 px-6 rounded-xl flex items-center gap-2 transition-all shadow-md shadow-orange-500/30 hover:scale-[1.02]">
-                        Étape suivante <ChevronRight className="h-4 w-4" />
-                      </button>
-                    </div>
+                  <h2 className="font-display text-2xl font-bold text-navy-900 mb-1">Coordonnées du responsable</h2>
+                  <p className="text-slate-500 text-sm mb-6">Nous utiliserons ces informations pour vous recontacter.</p>
+                  <div className="grid md:grid-cols-2 gap-3">
+                    <input className={CHAMP} placeholder="Prénom du tuteur" value={form.prenomTuteur} onChange={(e) => maj("prenomTuteur", e.target.value)} />
+                    <input className={CHAMP} placeholder="Nom du tuteur" value={form.nomTuteur} onChange={(e) => maj("nomTuteur", e.target.value)} />
+                    <input className={CHAMP} placeholder="Téléphone * (+224…)" value={form.telephone} onChange={(e) => maj("telephone", e.target.value)} />
+                    <input type="email" className={CHAMP} placeholder="Email (optionnel)" value={form.email} onChange={(e) => maj("email", e.target.value)} />
+                    <textarea className={`${CHAMP} md:col-span-2`} rows={3} placeholder="Message ou précisions (optionnel)" value={form.message} onChange={(e) => maj("message", e.target.value)} />
+                  </div>
+                  <div className="pt-6 flex justify-between items-center">
+                    <button onClick={() => setStep(1)} className="text-slate-500 hover:text-navy-900 text-sm font-bold py-2.5 px-4 rounded-xl flex items-center gap-2">
+                      <ChevronLeft className="h-4 w-4" /> Retour
+                    </button>
+                    <button onClick={() => setStep(3)} className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold py-2.5 px-6 rounded-xl flex items-center gap-2 shadow-md shadow-orange-500/30">
+                      Étape suivante <ChevronRight className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               )}
 
-              {/* STEP 3: DOSSIER */}
               {step === 3 && (
                 <div>
-                  <h2 className="font-display text-2xl font-bold text-navy-900 mb-1">Dossier à fournir</h2>
-                  <p className="text-slate-500 text-sm mb-6">Veuillez préparer les documents justificatifs pour finaliser l'inscription.</p>
-                  
-                  <div className="space-y-6">
-                    <p className="text-xs text-slate-600 leading-relaxed bg-blue-50/50 p-3 rounded-xl border border-blue-100">Vous pouvez scanner ou photographier les documents. Assurez-vous qu'ils soient lisibles.</p>
-                    
-                    <div className="space-y-2">
-                      {[
-                        "Extrait de naissance",
-                        "Certificat de scolarité",
-                        "Bulletins (année précédente)",
-                        "Photos d'identité (x4)",
-                        "Carnet de vaccination",
-                        "Certificat médical",
-                        "Pièce d'identité parent",
-                        "Justificatif de domicile"
-                      ].map((doc, i) => (
-                        <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-white border border-neutral-200 rounded-xl shadow-sm gap-3 hover:border-blue-200 transition-colors">
-                          <span className="text-xs font-bold text-navy-900">{doc}</span>
-                          <div className="flex gap-2">
-                            <button className="flex items-center gap-1.5 px-2.5 py-1.5 border border-neutral-200 rounded-lg text-[10px] font-bold text-slate-600 hover:bg-blue-50 hover:border-blue-200 transition-colors"><Camera className="h-3.5 w-3.5"/> Photo</button>
-                            <button className="flex items-center gap-1.5 px-2.5 py-1.5 border border-neutral-200 rounded-lg text-[10px] font-bold text-slate-600 hover:bg-blue-50 hover:border-blue-200 transition-colors"><UploadCloud className="h-3.5 w-3.5"/> Fichier</button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Fiches de renseignements */}
-                    <div className="mt-6 border border-orange-200 bg-white shadow-sm rounded-2xl p-5">
-                      <h3 className="font-bold text-navy-900 mb-1.5 flex items-center gap-2 text-sm"><Download className="h-4 w-4 text-orange-500"/> Fiches à télécharger</h3>
-                      <p className="text-xs text-slate-600 mb-4">Remplissez ces fiches et apportez-les lors de votre rendez-vous.</p>
-                      
-                      <div className="space-y-2.5">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-paper-50 border border-neutral-200 rounded-xl gap-3">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-red-100 text-red-600 rounded-lg shadow-sm"><FileText className="h-4 w-4"/></div>
-                            <div><p className="text-xs font-bold text-navy-900">FICHE RENSEIGNEMENT 2026</p><p className="text-[10px] text-slate-500 font-semibold">PDF</p></div>
-                          </div>
-                          <button className="bg-white border border-neutral-200 text-navy-900 text-[10px] font-bold px-3 py-2 rounded-lg hover:bg-neutral-100 transition-colors shadow-sm">Télécharger</button>
-                        </div>
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-paper-50 border border-neutral-200 rounded-xl gap-3">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-red-100 text-red-600 rounded-lg shadow-sm"><FileText className="h-4 w-4"/></div>
-                            <div><p className="text-xs font-bold text-navy-900">FICHE CLASSES D'EXAMEN</p><p className="text-[10px] text-slate-500 font-semibold">PDF</p></div>
-                          </div>
-                          <button className="bg-white border border-neutral-200 text-navy-900 text-[10px] font-bold px-3 py-2 rounded-lg hover:bg-neutral-100 transition-colors shadow-sm">Télécharger</button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="pt-6 flex flex-col-reverse sm:flex-row justify-between items-center gap-4 border-t border-neutral-100">
-                      <button onClick={() => handleStepChange(2)} className="text-slate-500 hover:text-navy-900 text-sm font-bold py-2.5 px-4 rounded-xl flex items-center gap-2 transition-colors">
-                        <ChevronLeft className="h-4 w-4" /> Retour
-                      </button>
-                      <button onClick={handleSubmit} className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white text-sm font-bold py-3 px-8 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-green-600/30 hover:scale-[1.02]">
-                        Soumettre la demande <CheckCircle2 className="h-4 w-4" />
-                      </button>
-                    </div>
+                  <h2 className="font-display text-2xl font-bold text-navy-900 mb-1">Récapitulatif</h2>
+                  <p className="text-slate-500 text-sm mb-6">Vérifiez puis envoyez votre demande.</p>
+                  <div className="rounded-2xl border border-neutral-200 bg-white p-5 text-sm space-y-2">
+                    <p><span className="text-slate-500">Élève : </span><strong>{form.prenomEleve} {form.nomEleve}</strong></p>
+                    <p><span className="text-slate-500">Niveau : </span>{config?.niveaux.find((n) => n.id === form.niveauId)?.nom ?? "Non précisé"}</p>
+                    <p><span className="text-slate-500">Contact : </span>{form.prenomTuteur} {form.nomTuteur} — {form.telephone || "—"}{form.email ? ` · ${form.email}` : ""}</p>
+                    {form.message && <p className="italic text-slate-500">« {form.message} »</p>}
+                  </div>
+                  <p className="mt-4 text-xs text-slate-500 leading-relaxed bg-blue-50/50 p-3 rounded-xl border border-blue-100">
+                    Les pièces du dossier (extrait de naissance, bulletins, photos, certificat médical…) seront à fournir lors du rendez-vous fixé par l&apos;administration.
+                  </p>
+                  {erreur && <p className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">{erreur}</p>}
+                  <div className="pt-6 flex justify-between items-center border-t border-neutral-100 mt-4">
+                    <button onClick={() => setStep(2)} className="text-slate-500 hover:text-navy-900 text-sm font-bold py-2.5 px-4 rounded-xl flex items-center gap-2">
+                      <ChevronLeft className="h-4 w-4" /> Retour
+                    </button>
+                    <button onClick={handleSubmit} disabled={envoi} className="bg-green-600 hover:bg-green-700 text-white text-sm font-bold py-3 px-8 rounded-xl flex items-center gap-2 shadow-md shadow-green-600/30 disabled:opacity-60">
+                      {envoi ? "Envoi…" : "Soumettre la demande"} <CheckCircle2 className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               )}

@@ -4,13 +4,25 @@ import { UserPlus } from "lucide-react";
 import { Sidebar } from "@/components/portal/Sidebar";
 import { Topbar } from "@/components/portal/Topbar";
 import { StudentsTable } from "@/components/portal/StudentsTable";
+import { listerElevesDTO } from "@/server/dal/eleves";
 
 export const metadata: Metadata = {
   title: "Élèves — Portail SAIMO",
   description: "Liste et recherche des élèves de l'établissement.",
 };
 
-export default function ElevesPage() {
+export default async function ElevesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; q?: string; classe?: string }>;
+}) {
+  const sp = await searchParams;
+  const { eleves, total } = await listerElevesDTO({
+    page: sp.page ? Number(sp.page) : 1,
+    recherche: sp.q,
+    classeId: sp.classe,
+  });
+
   return (
     <div className="min-h-screen bg-paper-100">
       <Sidebar />
@@ -25,7 +37,7 @@ export default function ElevesPage() {
                 Élèves
               </h1>
               <p className="mt-1 text-sm text-ink-500">
-                6 élèves affichés sur le total de l&rsquo;établissement pilote.
+                {total} élève{total > 1 ? "s" : ""} inscrit{total > 1 ? "s" : ""} pour l&rsquo;année en cours.
               </p>
             </div>
 
@@ -35,7 +47,7 @@ export default function ElevesPage() {
             </Link>
           </div>
 
-          <StudentsTable />
+          <StudentsTable eleves={eleves} total={total} />
         </main>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "sonner";
 import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
 import { ThemeApplier } from "@/components/ThemeApplier";
 
@@ -42,6 +43,7 @@ export default function RootLayout({
         className={`${displayFont.variable} ${bodyFont.variable} ${monoFont.variable} font-body antialiased`}
       >
         {children}
+        <Toaster richColors closeButton position="top-right" />
         <ThemeApplier />
         <ServiceWorkerRegistrar />
       </body>

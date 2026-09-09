@@ -10,7 +10,7 @@ export async function soumettreDemandeIA(input: {
   typeAction: TypeActionIA;
   prompt: string;
   contexte?: Record<string, unknown>;
-}): Promise<{ id: string; reponse?: string; succes: boolean }> {
+}): Promise<{ id: string; reponse?: string; succes: boolean; motifEchec?: string }> {
   // Créer la demande en base
   const demande = await prisma.demandeIA.create({
     data: {
@@ -18,7 +18,7 @@ export async function soumettreDemandeIA(input: {
       etablissementId: input.etablissementId,
       typeAction: input.typeAction,
       prompt: input.prompt,
-      contexte: input.contexte ?? {},
+      contexte: JSON.parse(JSON.stringify(input.contexte ?? {})),
       statut: "en_attente",
     },
   });
@@ -53,6 +53,7 @@ export async function soumettreDemandeIA(input: {
     id: demande.id,
     reponse: resultat.reponse,
     succes: resultat.success,
+    motifEchec: resultat.motifEchec,
   };
 }
 

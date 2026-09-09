@@ -1,106 +1,82 @@
-"use client";
+import Link from "next/link";
+import { Award, Eye } from "lucide-react";
+import { ParentShell, AucunEnfant } from "@/components/parent/ParentShell";
+import { resoudreEnfant, getBulletinsEnfant } from "@/server/dal/parent";
 
-import { Award, Download, Eye } from "lucide-react";
-import { ParentSidebar } from "@/components/parent/ParentSidebar";
-import { ParentTopbar } from "@/components/parent/ParentTopbar";
-import { bulletinsParent, enfantsList, notesParent } from "@/lib/mock-parent";
-import { useSearchParams } from "next/navigation";
+export const metadata = { title: "Bulletins — Espace Parent SAIMO" };
 
-export default function BulletinsParentPage() {
-  const searchParams = useSearchParams();
-  const enfantId = searchParams.get("enfant") || "e1";
-  const enfantInfo = enfantsList.find(e => e.id === enfantId) || enfantsList[0];
+export default async function BulletinsParentPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ enfant?: string }>;
+}) {
+  const sp = await searchParams;
+  const enfant = await resoudreEnfant(sp.enfant);
+  if (!enfant) return <AucunEnfant />;
+
+  const bulletins = await getBulletinsEnfant(enfant.id);
+
   return (
-    <div className="min-h-screen bg-neutral-50">
-      <ParentSidebar />
-      <div className="lg:pl-64">
-        <ParentTopbar />
-        <main className="mx-auto max-w-5xl px-6 py-8 lg:px-10">
-          <div className="mb-8">
-            <h1 className="font-display text-2xl font-bold tracking-tight text-neutral-900">Bulletins Scolaires</h1>
-            <p className="mt-1 text-sm text-neutral-500">{enfantInfo.nom} &bull; {enfantInfo.classe}</p>
-          </div>
+    <ParentShell>
+      <div className="mb-8">
+        <h1 className="font-display text-2xl font-bold tracking-tight text-neutral-900">
+          Bulletins scolaires
+        </h1>
+        <p className="mt-1 text-sm text-neutral-500">
+          {enfant.nomComplet} &bull; {enfant.classe}
+        </p>
+      </div>
 
-          <div className="grid gap-6">
-            {bulletinsParent.map(b => (
-              <div key={b.id} className="rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden">
-                {/* En-tete */}
-                <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 bg-gradient-to-r from-emerald-50 to-teal-50">
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-white">
-                      <Award className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <h2 className="font-bold text-neutral-900">{b.trimestre} &mdash; {b.annee}</h2>
-                      <p className="text-sm text-neutral-500">Emis le {new Date(b.dateEmission).toLocaleDateString("fr-FR")}</p>
-                    </div>
+      {bulletins.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-neutral-300 bg-white p-12 text-center text-sm text-neutral-500">
+          Aucun bulletin publié pour le moment.
+        </div>
+      ) : (
+        <div className="grid gap-6">
+          {bulletins.map((b) => (
+            <div key={b.id} className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
+              <div className="flex items-center justify-between border-b border-neutral-100 bg-gradient-to-r from-emerald-50 to-teal-50 px-6 py-5">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-white">
+                    <Award className="h-6 w-6" />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50 transition">
-                      <Eye className="h-4 w-4" /> Consulter
-                    </button>
-                    <button className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 transition">
-                      <Download className="h-4 w-4" /> Telecharger
-                    </button>
+                  <div>
+                    <h2 className="font-bold text-neutral-900">
+                      {b.periode} — {b.annee}
+                    </h2>
+                    <p className="text-sm text-neutral-500">{b.date ? `Publié le ${b.date}` : ""}</p>
                   </div>
                 </div>
-
-                {/* Stats du bulletin */}
-                <div className="grid grid-cols-3 divide-x divide-neutral-100 p-0">
-                  <div className="px-6 py-5 text-center">
-                    <p className="text-xs font-medium text-neutral-500 mb-1">Moyenne Generale</p>
-                    <p className={`text-2xl font-bold ${b.moyenneGenerale >= 14 ? "text-emerald-600" : "text-blue-600"}`}>
-                      {b.moyenneGenerale.toFixed(1)}<span className="text-sm text-neutral-400">/20</span>
-                    </p>
-                  </div>
-                  <div className="px-6 py-5 text-center">
-                    <p className="text-xs font-medium text-neutral-500 mb-1">Rang</p>
-                    <p className="text-2xl font-bold text-neutral-900">
-                      {b.rang}<span className="text-sm text-neutral-400">/{b.totalEleves}</span>
-                    </p>
-                  </div>
-                  <div className="px-6 py-5 text-center">
-                    <p className="text-xs font-medium text-neutral-500 mb-1">Mention</p>
-                    <span className={`inline-block rounded-full px-3 py-1 text-sm font-bold ${
-                      b.mention === "Tres bien" ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700"
-                    }`}>
-                      {b.mention}
-                    </span>
-                  </div>
+                <Link
+                  href={`/parent/bulletins/${b.id}?enfant=${enfant.id}`}
+                  className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 shadow-sm transition hover:bg-neutral-50"
+                >
+                  <Eye className="h-4 w-4" /> Consulter
+                </Link>
+              </div>
+              <div className="grid grid-cols-3 divide-x divide-neutral-100 text-center">
+                <div className="px-4 py-5">
+                  <p className="text-xs font-medium text-neutral-500">Moyenne</p>
+                  <p className="mt-1 text-xl font-bold text-emerald-600">
+                    {b.moyenneGenerale != null ? b.moyenneGenerale.toFixed(2) : "—"}/20
+                  </p>
                 </div>
-
-                {/* Tableau des notes integre */}
-                <div className="border-t border-neutral-100">
-                  <table className="w-full text-left text-sm">
-                    <thead>
-                      <tr className="bg-neutral-50/50 text-xs uppercase tracking-wide text-neutral-400">
-                        <th className="px-6 py-3 font-semibold">Matiere</th>
-                        <th className="px-6 py-3 font-semibold text-center">Coef.</th>
-                        <th className="px-6 py-3 font-semibold text-center">Moyenne</th>
-                        <th className="px-6 py-3 font-semibold">Appreciation</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-neutral-50">
-                      {notesParent.map(n => (
-                        <tr key={n.id} className="hover:bg-neutral-50/50">
-                          <td className="px-6 py-2.5 font-medium text-neutral-800">{n.matiere}</td>
-                          <td className="px-6 py-2.5 text-center text-neutral-500">{n.coefficient}</td>
-                          <td className="px-6 py-2.5 text-center font-bold font-mono">
-                            <span className={n.moyenne && n.moyenne >= 10 ? "text-emerald-600" : "text-red-500"}>
-                              {n.moyenne?.toFixed(1) ?? "-"}
-                            </span>
-                          </td>
-                          <td className="px-6 py-2.5 text-neutral-500 text-xs">{n.appreciation}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="px-4 py-5">
+                  <p className="text-xs font-medium text-neutral-500">Rang</p>
+                  <p className="mt-1 text-xl font-bold text-neutral-900">
+                    {b.rang ?? "—"}
+                    <span className="text-sm font-medium text-neutral-400">/{b.effectif ?? "—"}</span>
+                  </p>
+                </div>
+                <div className="px-4 py-5">
+                  <p className="text-xs font-medium text-neutral-500">Mention</p>
+                  <p className="mt-1 text-sm font-bold text-neutral-900">{b.mention}</p>
                 </div>
               </div>
-            ))}
-          </div>
-        </main>
-      </div>
-    </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </ParentShell>
   );
 }

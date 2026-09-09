@@ -7,9 +7,12 @@ export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
+    seed: "ts-node --project prisma/tsconfig.seed.json prisma/seed.ts",
   },
   datasource: {
-    url: process.env["DATABASE_URL"]!,
-    directUrl: process.env["DIRECT_URL"],
+    // Prisma 7 : l'URL vit ici (plus dans schema.prisma). Le runtime applicatif
+    // utilise le driver adapter (src/lib/prisma.ts) ; ceci ne sert qu'à la CLI
+    // (db push / migrate / studio). Le seed utilise DIRECT_URL en priorité.
+    url: process.env.DIRECT_URL ?? process.env.DATABASE_URL ?? "",
   },
 });

@@ -135,6 +135,86 @@ export async function envoyerRecuPaiement(params: {
   });
 }
 
+// ─── Contacts parents d'un élève (uniquement ceux qui ont un email) ──
+
+export async function contactsParentsEleve(
+  eleveId: string,
+): Promise<{ email: string; prenom: string; nom: string }[]> {
+  const relations = await prisma.relationParentEleve.findMany({
+    where: { eleveId, parent: { email: { not: null } } },
+    include: { parent: true },
+    orderBy: { principal: "desc" },
+  });
+  return relations
+    .map((r) => r.parent)
+    .filter((p): p is typeof p & { email: string } => !!p.email)
+    .map((p) => ({ email: p.email, prenom: p.prenom, nom: p.nom }));
+}
+
+// ─── Identifiants d'un nouveau compte (staff / enseignant) ──────────
+
+export async function envoyerIdentifiantsCompte(params: {
+  email: string;
+  prenom: string;
+  motDePasse: string;
+  roleLibelle: string;
+  etablissementNom: string;
+  lienConnexion: string;
+  etablissementId: string;
+}) {
+  const html = templateBase(
+    `<p>Bonjour <strong>${params.prenom}</strong>,</p>
+     <p>Un compte <strong>${params.roleLibelle}</strong> vient d'être créé pour vous sur SAIMO Ecole
+     (${params.etablissementNom}).</p>
+     <table style="width:100%;border-collapse:collapse;margin:16px 0">
+       <tr><td style="padding:8px;border:1px solid #ddd"><strong>Identifiant</strong></td><td style="padding:8px;border:1px solid #ddd">${params.email}</td></tr>
+       <tr><td style="padding:8px;border:1px solid #ddd"><strong>Mot de passe provisoire</strong></td><td style="padding:8px;border:1px solid #ddd">${params.motDePasse}</td></tr>
+     </table>
+     <a href="${params.lienConnexion}" class="btn">Se connecter</a>
+     <p>Pour votre sécurité, modifiez votre mot de passe dès la première connexion (Mon profil).</p>`,
+    "Vos identifiants SAIMO Ecole",
+  );
+  await envoyerEmail({
+    type: "invitation_compte",
+    destinataireEmail: params.email,
+    destinataireNom: params.prenom,
+    sujet: `Vos identifiants — ${params.etablissementNom}`,
+    htmlContent: html,
+    etablissementId: params.etablissementId,
+  });
+}
+
+// ─── Alerte absence / retard aux parents ───────────────────────────
+
+export async function envoyerAlerteAbsence(params: {
+  email: string;
+  prenomParent: string;
+  prenomEleve: string;
+  nomEleve: string;
+  date: string;
+  statut: "absent" | "retard";
+  motif?: string | null;
+  etablissementId: string;
+}) {
+  const libelle = params.statut === "retard" ? "en retard" : "absent(e)";
+  const html = templateBase(
+    `<p>Bonjour <strong>${params.prenomParent}</strong>,</p>
+     <p>Nous vous informons que <strong>${params.prenomEleve} ${params.nomEleve}</strong>
+     a été noté(e) <strong>${libelle}</strong> le <strong>${params.date}</strong>.</p>
+     ${params.motif ? `<p>Motif indiqué : ${params.motif}</p>` : ""}
+     <p>Si cette absence est justifiée, merci de transmettre un justificatif à l'établissement.</p>`,
+    "Information d'assiduité",
+  );
+  await envoyerEmail({
+    type: "annonce_administrative",
+    destinataireEmail: params.email,
+    destinataireNom: params.prenomParent,
+    sujet: `Assiduité de ${params.prenomEleve} ${params.nomEleve} — ${params.date}`,
+    htmlContent: html,
+    etablissementId: params.etablissementId,
+  });
+}
+
 export async function envoyerNotifBulletin(params: {
   email: string;
   prenomParent: string;

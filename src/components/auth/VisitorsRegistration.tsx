@@ -1,52 +1,51 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useRef, useEffect } from "react";
+import { useActionState } from "react";
+import { useFormStatus } from "react-dom";
 import { gsap } from "gsap";
-import { Mail, Lock, LogIn, Loader2 } from "lucide-react";
+import { Mail, Lock, Loader2 } from "lucide-react";
 import { LogoLockup } from "@/components/Logo";
 import Link from "next/link";
+import { actionConnexionParent } from "@/server/actions/auth";
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="w-full rounded-xl bg-gradient-to-r from-blue-500 to-orange-400 hover:from-blue-600 hover:to-orange-500 py-4 font-bold text-white transition-all shadow-[0_8px_20px_-8px_rgba(249,115,22,0.5)] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+    >
+      {pending ? (
+        <>
+          <Loader2 className="h-5 w-5 animate-spin" />
+          Connexion...
+        </>
+      ) : (
+        "Se connecter"
+      )}
+    </button>
+  );
+}
 
 export function VisitorsRegistration() {
   const rootRef = useRef<HTMLDivElement>(null);
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, formAction] = useActionState(actionConnexionParent, undefined);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
       gsap.fromTo(
         ".step-anim",
         { opacity: 0, y: 15 },
-        { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "power3.out" }
+        { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "power3.out" },
       );
     }, rootRef);
     return () => ctx.revert();
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-
-    if (!email || !password) {
-      setError("Veuillez remplir tous les champs.");
-      return;
-    }
-
-    setIsLoading(true);
-
-    // Simulate login
-    setTimeout(() => {
-      setIsLoading(false);
-      window.localStorage.setItem("saimo-portal-role", "parent");
-      window.location.href = `/parent`;
-    }, 1500);
-  };
-
   return (
     <div ref={rootRef} className="w-full bg-transparent" suppressHydrationWarning>
-
       <div className="card-badge mb-10 flex justify-center lg:hidden step-anim">
         <Link href="/">
           <LogoLockup variant="dark" />
@@ -63,9 +62,8 @@ export function VisitorsRegistration() {
           </p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-6">
-
-          {/* Email Input */}
+        <form action={formAction} className="space-y-6">
+          {/* Email */}
           <div className="step-anim relative">
             <div className="absolute -top-2.5 left-3 bg-[#FDF8F0] px-1 text-xs font-semibold text-blue-600 z-10">
               Email
@@ -76,15 +74,16 @@ export function VisitorsRegistration() {
               </div>
               <input
                 type="email"
+                name="email"
+                required
+                autoComplete="email"
                 placeholder="parent@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-transparent rounded-xl border-2 border-neutral-200 py-3.5 pl-11 pr-4 text-sm text-navy-900 placeholder:text-slate-400 outline-none transition-all focus:border-orange-400 hover:border-neutral-300"
               />
             </div>
           </div>
 
-          {/* Password Input */}
+          {/* Mot de passe */}
           <div className="step-anim relative">
             <div className="absolute -top-2.5 left-3 bg-[#FDF8F0] px-1 text-xs font-semibold text-blue-600 z-10">
               Mot de passe
@@ -95,9 +94,10 @@ export function VisitorsRegistration() {
               </div>
               <input
                 type="password"
+                name="password"
+                required
+                autoComplete="current-password"
                 placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-transparent rounded-xl border-2 border-neutral-200 py-3.5 pl-11 pr-4 text-sm text-navy-900 placeholder:text-slate-400 outline-none transition-all focus:border-orange-400 hover:border-neutral-300"
               />
             </div>
@@ -105,10 +105,18 @@ export function VisitorsRegistration() {
 
           <div className="step-anim flex items-center justify-between pt-1">
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" className="rounded text-orange-500 focus:ring-orange-500 w-4 h-4 border-neutral-300" />
-              <span className="text-xs font-medium text-slate-600">Se souvenir de moi</span>
+              <input
+                type="checkbox"
+                className="rounded text-orange-500 focus:ring-orange-500 w-4 h-4 border-neutral-300"
+              />
+              <span className="text-xs font-medium text-slate-600">
+                Se souvenir de moi
+              </span>
             </label>
-            <a href="#" className="text-xs font-medium text-orange-500 hover:text-orange-600 hover:underline">
+            <a
+              href="/sections/contact"
+              className="text-xs font-medium text-orange-500 hover:text-orange-600 hover:underline"
+            >
               Mot de passe oublié ?
             </a>
           </div>
@@ -120,24 +128,10 @@ export function VisitorsRegistration() {
           )}
 
           <div className="step-anim pt-4">
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full rounded-xl bg-gradient-to-r from-blue-500 to-orange-400 hover:from-blue-600 hover:to-orange-500 py-4 font-bold text-white transition-all shadow-[0_8px_20px_-8px_rgba(249,115,22,0.5)] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  Connexion...
-                </>
-              ) : (
-                "Se connecter"
-              )}
-            </button>
+            <SubmitButton />
           </div>
         </form>
       </div>
-
     </div>
   );
 }

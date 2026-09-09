@@ -46,15 +46,16 @@ import { auth } from "@/lib/auth";
  *       401:
  *         description: Non authentifié
  */
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.etablissementId) {
       return NextResponse.json({ erreur: "Non authentifié" }, { status: 401 });
     }
 
+    const { id } = await params;
     const body = await request.json();
-    await saisirNotes(params.id, body, session.user.id, session.user.etablissementId);
+    await saisirNotes(id, body, session.user.id, session.user.etablissementId);
 
     return NextResponse.json({ succes: true });
   } catch (error) {
@@ -88,14 +89,15 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
  *       401:
  *         description: Non authentifié
  */
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.etablissementId) {
       return NextResponse.json({ erreur: "Non authentifié" }, { status: 401 });
     }
 
-    await validerEvaluation(params.id, session.user.id, session.user.etablissementId);
+    const { id } = await params;
+    await validerEvaluation(id, session.user.id, session.user.etablissementId);
 
     return NextResponse.json({ succes: true });
   } catch (error) {

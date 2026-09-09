@@ -1,19 +1,17 @@
-import * as brevo from "@getbrevo/brevo";
+import { BrevoClient } from "@getbrevo/brevo";
 
-const apiInstance = new brevo.TransactionalEmailsApi();
-apiInstance.setApiKey(
-  brevo.TransactionalEmailsApiApiKeys.apiKey,
-  process.env.BREVO_API_KEY!
-);
+const apiKey = process.env.BREVO_API_KEY ?? "";
+
+export const brevoClient = new BrevoClient({ apiKey });
 
 export const senderDefault = {
-  email: process.env.BREVO_SENDER_EMAIL!,
+  email: process.env.BREVO_SENDER_EMAIL ?? "no-reply@saimo-ecole.gn",
   name: process.env.BREVO_SENDER_NAME ?? "SAIMO Ecole",
 };
 
 /**
  * Envoie un email transactionnel via Brevo.
- * Retourne l'ID externe du message ou null en cas d'échec.
+ * RM-14 : l'indisponibilité de Brevo ne bloque jamais l'opération métier.
  */
 export async function sendEmail(params: {
   to: { email: string; name?: string }[];
@@ -22,21 +20,22 @@ export async function sendEmail(params: {
   replyTo?: { email: string; name?: string };
   tags?: string[];
 }): Promise<{ success: boolean; idExterne?: string; motifEchec?: string }> {
-  try {
-    const sendSmtpEmail = new brevo.SendSmtpEmail();
-    sendSmtpEmail.sender = senderDefault;
-    sendSmtpEmail.to = params.to;
-    sendSmtpEmail.subject = params.subject;
-    sendSmtpEmail.htmlContent = params.htmlContent;
-    if (params.replyTo) sendSmtpEmail.replyTo = params.replyTo;
-    if (params.tags) sendSmtpEmail.tags = params.tags;
+  if (!apiKey) {
+    return { success: false, motifEchec: "BREVO_API_KEY non configurée" };
+  }
 
-    const result = await apiInstance.sendTransacEmail(sendSmtpEmail);
-    return { success: true, idExterne: result.body?.messageId };
+  try {
+    const res = await brevoClient.transactionalEmails.sendTransacEmail({
+      sender: senderDefault,
+      to: params.to,
+      subject: params.subject,
+      htmlContent: params.htmlContent,
+      replyTo: params.replyTo,
+      tags: params.tags,
+    });
+    return { success: true, idExterne: res.messageId };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     return { success: false, motifEchec: message };
   }
 }
-
-export { apiInstance as brevoClient };

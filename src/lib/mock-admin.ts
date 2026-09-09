@@ -46,18 +46,26 @@ export const cycles = [
 
 // Annonces
 export const annonces = [
-  { id: "an1", titre: "Rentree scolaire 2026-2027", cible: "Tous",    date: "2026-08-15", statut: "Publiee",    auteur: "Direction" },
-  { id: "an2", titre: "Reunion parents d eleves",   cible: "Parents", date: "2026-09-05", statut: "Programmee", auteur: "Directeur" },
-  { id: "an3", titre: "Examens de mi-trimestre",    cible: "Eleves",  date: "2026-10-20", statut: "Brouillon",  auteur: "Scolarite" },
+  { id: "an1", titre: "Rentrée scolaire 2026-2027", cible: "Tous", cibles: ["Parents", "Élèves", "Enseignants"], contenu: "La rentrée aura lieu le lundi 15 septembre. Merci de finaliser les réinscriptions avant le 30 août.", date: "2026-08-15", statut: "Publiee", publie: true, auteur: "Direction" },
+  { id: "an2", titre: "Réunion parents d'élèves", cible: "Parents", cibles: ["Parents"], contenu: "Réunion de présentation des équipes pédagogiques le samedi 5 septembre à 9h au réfectoire.", date: "2026-09-05", statut: "Programmee", publie: false, auteur: "Directeur" },
+  { id: "an3", titre: "Examens de mi-trimestre", cible: "Eleves", cibles: ["Élèves"], contenu: "Les compositions de mi-trimestre se dérouleront du 20 au 24 octobre. Le calendrier détaillé sera affiché.", date: "2026-10-20", statut: "Brouillon", publie: false, auteur: "Scolarite" },
 ];
 
 // Journal Audit
 export const auditLogs = [
-  { id: "au1", action: "CREATE", ressource: "Classe 6eme A",        utilisateur: "Admin Soumah", date: "2026-08-20T09:00:00Z", ip: "192.168.1.1" },
-  { id: "au2", action: "UPDATE", ressource: "Note Maths - Aliou",   utilisateur: "M. Camara",    date: "2026-08-20T10:15:00Z", ip: "192.168.1.5" },
-  { id: "au3", action: "DELETE", ressource: "Seance Vendredi",      utilisateur: "Admin Soumah", date: "2026-08-20T11:30:00Z", ip: "192.168.1.1" },
-  { id: "au4", action: "CREATE", ressource: "Paiement - Fatou Bah", utilisateur: "Comptable",    date: "2026-08-21T08:00:00Z", ip: "192.168.1.8" },
-  { id: "au5", action: "UPDATE", ressource: "Profil Enseignant",    utilisateur: "Admin Soumah", date: "2026-08-21T09:30:00Z", ip: "192.168.1.1" },
+  { id: "au1", action: "CREATE", entite: "Classe", ressource: "Classe 6eme A", detail: "Création de la classe 6ème A", utilisateur: "Admin Soumah", date: "2026-08-20T09:00:00Z", ip: "192.168.1.1" },
+  { id: "au2", action: "UPDATE", entite: "Note", ressource: "Note Maths - Aliou", detail: "Note modifiée : 12 → 14", utilisateur: "M. Camara", date: "2026-08-20T10:15:00Z", ip: "192.168.1.5" },
+  { id: "au3", action: "DELETE", entite: "Seance", ressource: "Seance Vendredi", detail: "Séance du vendredi supprimée", utilisateur: "Admin Soumah", date: "2026-08-20T11:30:00Z", ip: "192.168.1.1" },
+  { id: "au4", action: "CREATE", entite: "Paiement", ressource: "Paiement - Fatou Bah", detail: "Encaissement 150 000 GNF (reçu REC-2026-0842)", utilisateur: "Comptable", date: "2026-08-21T08:00:00Z", ip: "192.168.1.8" },
+  { id: "au5", action: "UPDATE", entite: "Utilisateur", ressource: "Profil Enseignant", detail: "Téléphone mis à jour", utilisateur: "Admin Soumah", date: "2026-08-21T09:30:00Z", ip: "192.168.1.1" },
+];
+
+// Reçus de paiement (historique)
+export const recus = [
+  { id: "re1", numero: "REC-2026-0838", eleve: "Fatou Bah", classe: "6ème A", montant: 150000, date: "2026-08-21T08:00:00Z", mode: "Espèces", statut: "Envoyé" },
+  { id: "re2", numero: "REC-2026-0839", eleve: "Aliou Diallo", classe: "5ème A", montant: 200000, date: "2026-08-21T09:10:00Z", mode: "Orange Money", statut: "Envoyé" },
+  { id: "re3", numero: "REC-2026-0840", eleve: "Mariama Sow", classe: "4ème A", montant: 175000, date: "2026-08-22T10:30:00Z", mode: "Virement", statut: "Non envoyé" },
+  { id: "re4", numero: "REC-2026-0841", eleve: "Ibrahima Camara", classe: "6ème B", montant: 150000, date: "2026-08-22T11:45:00Z", mode: "Espèces", statut: "Envoyé" },
 ];
 
 // Utilisateurs

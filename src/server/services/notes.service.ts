@@ -152,9 +152,11 @@ export async function calculerMoyennesClasse(
   const parEleve = new Map<string, { points: number; coeff: number }>();
 
   for (const evaluation of evaluations) {
-    const coefficient = Number(
-      evaluation.matiere.niveaux[0]?.coefficient ?? 1
-    );
+    // Coefficient du niveau de CETTE classe (et non le premier niveau venu).
+    const mnClasse =
+      evaluation.matiere.niveaux.find((mn) => mn.niveau.classes.length > 0) ??
+      evaluation.matiere.niveaux[0];
+    const coefficient = Number(mnClasse?.coefficient ?? 1);
 
     for (const note of evaluation.notes) {
       if (note.dispense) continue;
@@ -178,4 +180,75 @@ export async function calculerMoyennesClasse(
     totalPoints: points,
     totalCoefficients: coeff,
   }));
+}
+
+// ─── Détail des moyennes par matière (pour les bulletins) ────────────
+
+export interface DetailMatiereEleve {
+  matiereId: string;
+  coefficient: number;
+  moyenne: number | null;
+}
+
+/**
+ * Pour chaque élève de la classe, la moyenne /20 par matière,
+ * calculée sur les évaluations verrouillées de la période.
+ */
+export async function calculerDetailParMatiere(
+  classeId: string,
+  periodeId: string,
+  etablissementId: string,
+): Promise<Map<string, DetailMatiereEleve[]>> {
+  const evaluations = await prisma.evaluation.findMany({
+    where: { classeId, periodeId, etablissementId, statut: "verrouillee" },
+    include: {
+      notes: true,
+      matiere: {
+        include: {
+          niveaux: {
+            include: { niveau: { include: { classes: { where: { id: classeId } } } } },
+          },
+        },
+      },
+    },
+  });
+
+  // eleveId -> matiereId -> { somme sur20, nb, coef }
+  const parEleve = new Map<
+    string,
+    Map<string, { somme: number; nb: number; coef: number }>
+  >();
+
+  for (const evaluation of evaluations) {
+    const mnClasse =
+      evaluation.matiere.niveaux.find((mn) => mn.niveau.classes.length > 0) ??
+      evaluation.matiere.niveaux[0];
+    const coef = Number(mnClasse?.coefficient ?? 1);
+    const matiereId = evaluation.matiereId;
+
+    for (const note of evaluation.notes) {
+      if (note.dispense || note.absent || note.valeur === null) continue;
+      const sur20 = (Number(note.valeur) / Number(evaluation.noteMaximale)) * 20;
+
+      const matMap = parEleve.get(note.eleveId) ?? new Map();
+      const cur = matMap.get(matiereId) ?? { somme: 0, nb: 0, coef };
+      cur.somme += sur20;
+      cur.nb += 1;
+      matMap.set(matiereId, cur);
+      parEleve.set(note.eleveId, matMap);
+    }
+  }
+
+  const resultat = new Map<string, DetailMatiereEleve[]>();
+  for (const [eleveId, matMap] of parEleve) {
+    resultat.set(
+      eleveId,
+      [...matMap.entries()].map(([matiereId, v]) => ({
+        matiereId,
+        coefficient: v.coef,
+        moyenne: v.nb ? Math.round((v.somme / v.nb) * 100) / 100 : null,
+      })),
+    );
+  }
+  return resultat;
 }

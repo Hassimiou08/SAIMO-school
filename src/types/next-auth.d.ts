@@ -18,3 +18,11 @@ declare module "next-auth" {
     role?: RoleUtilisateur;
   }
 }
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    id?: string;
+    etablissementId?: string;
+    role?: RoleUtilisateur;
+  }
+}

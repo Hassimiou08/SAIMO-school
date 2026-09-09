@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { audit, AuditAction, AuditEntite } from "@/server/logs/audit";
 import { sendEmail } from "@/lib/brevo";
+import { trouverOuCreerParent, relierParentEleve } from "@/server/services/parent.service";
 import {
   trouverEleveParMatricule,
   creerEleve,
@@ -114,6 +115,125 @@ export async function creerNouvelEleve(input: CreerEleveInput) {
     entite: AuditEntite.ELEVE,
     entiteId: resultat.eleve.id,
     apres: { matricule, prenom: donnees.prenom, nom: donnees.nom },
+  });
+
+  return resultat;
+}
+
+// ─── Inscription complète (élève + tuteur + frais) ───────────
+
+export interface InscriptionCompleteInput extends CreerEleveInput {
+  tuteurPrenom?: string;
+  tuteurNom?: string;
+  tuteurTelephone?: string;
+  tuteurEmail?: string;
+  tuteurLien?: string;
+}
+
+export async function inscrireEleveComplet(input: InscriptionCompleteInput) {
+  const { etablissementId, anneeScolaireId, classeId, inscritParId } = input;
+
+  // RM-03 : doublon
+  if (input.dateNaissance) {
+    const doublon = await prisma.eleve.findFirst({
+      where: {
+        etablissementId,
+        prenom: input.prenom,
+        nom: input.nom,
+        dateNaissance: input.dateNaissance,
+        statut: "actif",
+      },
+    });
+    if (doublon) {
+      throw new Error(`Un élève similaire existe déjà (matricule ${doublon.matricule})`);
+    }
+  }
+
+  const matricule = await genererMatricule(etablissementId, anneeScolaireId);
+
+  const resultat = await prisma.$transaction(async (tx) => {
+    const eleve = await tx.eleve.create({
+      data: {
+        etablissementId,
+        matricule,
+        prenom: input.prenom,
+        nom: input.nom,
+        dateNaissance: input.dateNaissance,
+        lieuNaissance: input.lieuNaissance,
+        sexe: input.sexe,
+        nationalite: input.nationalite,
+        adresse: input.adresse,
+      },
+    });
+
+    const inscription = await tx.inscription.create({
+      data: {
+        eleveId: eleve.id,
+        anneeScolaireId,
+        classeId,
+        etablissementId,
+        typeInscription: "nouvelle",
+        inscritParId,
+      },
+    });
+
+    // Tuteur — réutilise la fiche existante si ce tuteur a déjà un autre enfant inscrit.
+    if (input.tuteurPrenom && input.tuteurNom && input.tuteurTelephone) {
+      const parent = await trouverOuCreerParent(tx, {
+        prenom: input.tuteurPrenom,
+        nom: input.tuteurNom,
+        telephone: input.tuteurTelephone,
+        email: input.tuteurEmail,
+      });
+      await relierParentEleve(tx, {
+        parentId: parent.id,
+        eleveId: eleve.id,
+        lien: input.tuteurLien ?? "tuteur",
+        principal: true,
+      });
+    }
+
+    // Frais depuis les échéances du niveau de la classe
+    const classe = await tx.classe.findUnique({
+      where: { id: classeId },
+      select: { niveauId: true },
+    });
+    const echeances = await tx.echeance.findMany({
+      where: {
+        anneeScolaireId,
+        typeFrais: { etablissementId },
+        OR: [{ niveauId: classe?.niveauId ?? undefined }, { niveauId: null }],
+      },
+      include: { typeFrais: true },
+      orderBy: { dateEcheance: "asc" },
+    });
+
+    const frais = [];
+    for (const e of echeances) {
+      const f = await tx.fraisEleve.create({
+        data: {
+          inscriptionId: inscription.id,
+          echeanceId: e.id,
+          montantDu: e.montant,
+        },
+      });
+      frais.push({
+        id: f.id,
+        libelle: e.libelle ?? e.typeFrais.nom,
+        montantDu: Number(e.montant),
+      });
+    }
+
+    return { eleve, inscription, frais };
+  });
+
+  await audit({
+    utilisateurId: inscritParId,
+    etablissementId,
+    action: AuditAction.CREATE,
+    entite: AuditEntite.ELEVE,
+    entiteId: resultat.eleve.id,
+    apres: { matricule, prenom: input.prenom, nom: input.nom, inscriptionComplete: true },
   });
 
   return resultat;

@@ -66,3 +66,24 @@ button:focus-visible,
   outline-offset: 3px;
   border-radius: 4px;
 }
+
+/* Impression des bulletins (A4) */
+@media print {
+  @page {
+    size: A4;
+    margin: 16mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+  }
+  .print\:break-after-page {
+    break-after: page;
+  }
+  .print\:break-after-page:last-child {
+    break-after: auto;
+  }
+  article {
+    break-inside: avoid;
+  }
+}

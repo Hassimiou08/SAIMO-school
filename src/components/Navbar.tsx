@@ -19,6 +19,10 @@ const links = [
     href: "/sections/programme",
   },
   {
+    label: "Jeux",
+    href: "/jeux",
+  },
+  {
     label: "Préinscription",
     href: "/sections/preinscription",
   },

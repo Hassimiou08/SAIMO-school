@@ -110,7 +110,7 @@ export default function ConnectionPageClient() {
               </div>
 
               <div className="relative z-10 flex items-center text-sm font-bold text-blue-600">
-                <span>Accès Sécurisé (2 étapes)</span>
+                <span>Accès personnel sécurisé</span>
                 <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-2 transition-transform" />
               </div>
             </Link>
@@ -132,7 +132,7 @@ export default function ConnectionPageClient() {
               </div>
 
               <div className="relative z-10 flex items-center text-sm font-bold text-orange-500">
-                <span>Connexion Rapide (1 étape)</span>
+                <span>Connexion familles</span>
                 <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-2 transition-transform" />
               </div>
             </Link>

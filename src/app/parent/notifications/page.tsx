@@ -1,94 +1,64 @@
-"use client";
+import { AlertCircle, CalendarX2, Wallet2, CheckCircle2, FileText, Bell } from "lucide-react";
+import { ParentShell, AucunEnfant } from "@/components/parent/ParentShell";
+import { resoudreEnfant, getNotificationsEnfant } from "@/server/dal/parent";
 
-import { Bell, AlertCircle, CalendarX2, Wallet2, CheckCircle2 } from "lucide-react";
-import { ParentSidebar } from "@/components/parent/ParentSidebar";
-import { ParentTopbar } from "@/components/parent/ParentTopbar";
-import { notificationsParent, enfantsList } from "@/lib/mock-parent";
-import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+export const metadata = { title: "Notifications — Espace Parent SAIMO" };
 
-export default function NotificationsParentPage() {
-  const searchParams = useSearchParams();
-  const enfantId = searchParams.get("enfant") || "e1";
-  const enfantInfo = enfantsList.find(e => e.id === enfantId) || enfantsList[0];
-  const [notifs, setNotifs] = useState(notificationsParent);
+const ICON = {
+  note: { i: CheckCircle2, c: "text-emerald-600", bg: "bg-emerald-100" },
+  absence: { i: CalendarX2, c: "text-orange-600", bg: "bg-orange-100" },
+  paiement: { i: Wallet2, c: "text-red-600", bg: "bg-red-100" },
+  bulletin: { i: FileText, c: "text-blue-600", bg: "bg-blue-100" },
+} as const;
 
-  const getIcon = (type: string) => {
-    switch (type) {
-      case "note": return <CheckCircle2 className="h-5 w-5 text-emerald-600" />;
-      case "absence": return <CalendarX2 className="h-5 w-5 text-orange-600" />;
-      case "paiement": return <Wallet2 className="h-5 w-5 text-red-600" />;
-      default: return <AlertCircle className="h-5 w-5 text-blue-600" />;
-    }
-  };
+export default async function NotificationsParentPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ enfant?: string }>;
+}) {
+  const sp = await searchParams;
+  const enfant = await resoudreEnfant(sp.enfant);
+  if (!enfant) return <AucunEnfant />;
 
-  const getBg = (type: string) => {
-    switch (type) {
-      case "note": return "bg-emerald-100";
-      case "absence": return "bg-orange-100";
-      case "paiement": return "bg-red-100";
-      default: return "bg-blue-100";
-    }
-  };
-
-  const markAllAsRead = () => {
-    setNotifs(notifs.map(n => ({ ...n, lu: true })));
-  };
+  const notifs = await getNotificationsEnfant(enfant.id);
 
   return (
-    <div className="min-h-screen bg-neutral-50">
-      <ParentSidebar />
-      <div className="lg:pl-64">
-        <ParentTopbar />
-        <main className="mx-auto max-w-4xl px-6 py-8 lg:px-10">
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <h1 className="font-display text-2xl font-bold tracking-tight text-neutral-900">Notifications</h1>
-              <p className="mt-1 text-sm text-neutral-500">Alertes et mises à jour pour {enfantInfo.nom}</p>
-            </div>
-            {notifs.some(n => !n.lu) && (
-              <button
-                onClick={markAllAsRead}
-                className="rounded-full bg-neutral-100 px-4 py-2 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-200"
-              >
-                Tout marquer comme lu
-              </button>
-            )}
-          </div>
+    <ParentShell max="max-w-4xl">
+      <div className="mb-8">
+        <h1 className="font-display text-2xl font-bold tracking-tight text-neutral-900">Notifications</h1>
+        <p className="mt-1 text-sm text-neutral-500">Alertes et mises à jour pour {enfant.prenom}</p>
+      </div>
 
-          <div className="space-y-3">
-            {notifs.map(n => (
+      {notifs.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-neutral-300 bg-white p-12 text-center">
+          <Bell className="mx-auto mb-2 h-6 w-6 text-neutral-300" />
+          <p className="text-sm text-neutral-500">Rien à signaler pour le moment.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {notifs.map((n) => {
+            const cfg = ICON[n.type];
+            return (
               <div
                 key={n.id}
-                className={`flex items-start gap-4 rounded-2xl border p-4 transition-all ${
-                  n.lu ? "border-neutral-100 bg-white" : "border-emerald-200 bg-emerald-50/50 shadow-sm"
-                }`}
+                className="flex items-start gap-4 rounded-2xl border border-neutral-100 bg-white p-4"
               >
-                <div className={`mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${getBg(n.type)}`}>
-                  {getIcon(n.type)}
+                <div className={`mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${cfg.bg}`}>
+                  <cfg.i className={`h-5 w-5 ${cfg.c}`} />
                 </div>
                 <div className="flex-1">
-                  <p className={`text-sm ${n.lu ? "text-neutral-600" : "font-semibold text-neutral-900"}`}>
-                    {n.message}
-                  </p>
-                  <p className="mt-1 text-xs text-neutral-400">
-                    {new Date(n.date).toLocaleDateString("fr-FR", {
-                      weekday: "long",
-                      day: "numeric",
-                      month: "long",
-                      hour: "2-digit",
-                      minute: "2-digit"
-                    })}
-                  </p>
+                  <p className="text-sm font-medium text-neutral-800">{n.message}</p>
+                  <p className="mt-1 text-xs text-neutral-400">{n.date}</p>
                 </div>
-                {!n.lu && (
-                  <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                )}
               </div>
-            ))}
-          </div>
-        </main>
-      </div>
-    </div>
+            );
+          })}
+        </div>
+      )}
+
+      <p className="mt-6 text-xs text-neutral-400">
+        Cette liste se met à jour automatiquement selon les notes, absences, paiements et bulletins.
+      </p>
+    </ParentShell>
   );
 }

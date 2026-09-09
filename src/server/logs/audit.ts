@@ -28,7 +28,9 @@ export async function audit(params: AuditParams): Promise<void> {
         avant: params.avant ? JSON.parse(JSON.stringify(params.avant)) : undefined,
         apres: params.apres ? JSON.parse(JSON.stringify(params.apres)) : undefined,
         ipAdresse: params.ipAdresse,
-        metadata: params.metadata,
+        metadata: params.metadata
+          ? JSON.parse(JSON.stringify(params.metadata))
+          : undefined,
       },
     });
   } catch (error) {

@@ -48,8 +48,39 @@ model Etablissement {
   notifications            Notification[]
   journalAudits            JournalAudit[]
   invitations              Invitation[]
+  preInscriptions          PreInscription[]
 
   @@map("etablissements")
+}
+
+// Demande de pré-inscription soumise depuis le site public (avant validation).
+model PreInscription {
+  id              String   @id @default(cuid())
+  etablissementId String
+  anneeScolaireId String
+  niveauId        String?
+  reference       String   @unique
+  prenomEleve     String
+  nomEleve        String
+  dateNaissance   DateTime?
+  sexe            String?
+  niveauSouhaite  String?
+  prenomTuteur    String?
+  nomTuteur       String?
+  telephone       String
+  email           String?
+  message         String?
+  // nouvelle → contactee → acceptee → refusee → convertie
+  statut          String   @default("nouvelle")
+  traiteeParId    String?
+  eleveId         String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  etablissement Etablissement @relation(fields: [etablissementId], references: [id], onDelete: Cascade)
+
+  @@index([etablissementId, statut])
+  @@map("pre_inscriptions")
 }
 
 model AnneeScolaire {
@@ -127,6 +158,7 @@ model Utilisateur {
   nom                  String
   telephone            String?
   photo                String?
+  signature            String?   // image PNG encodée en data URI (signature manuscrite)
   actif                Boolean   @default(true)
   emailVerifie         Boolean   @default(false)
   tentativesConnexion  Int       @default(0)
@@ -142,6 +174,8 @@ model Utilisateur {
   enseignant       Enseignant?
   parent           Parent?
   eleveCompte      Eleve?                    @relation("CompteEleve")
+  conversations    ParticipantConversation[]
+  messagesEnvoyes  Message[]
 
   @@map("utilisateurs")
 }
@@ -367,6 +401,7 @@ model Classe {
   bulletins               Bulletin[]
   presences               Presence[]
   seances                 Seance[]
+  creneaux                CreneauCours[]
 
   @@unique([etablissementId, anneeScolaireId, nom])
   @@map("classes")
@@ -385,6 +420,7 @@ model Matiere {
   evaluations      Evaluation[]
   seances          Seance[]                @relation("SeancesMatiere")
   moyennesMatieres MoyenneMatiere[]
+  creneaux         CreneauCours[]
 
   @@unique([etablissementId, nom])
   @@map("matieres")
@@ -413,8 +449,32 @@ model Enseignant {
   utilisateur   Utilisateur           @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
   etablissement Etablissement         @relation(fields: [etablissementId], references: [id], onDelete: Restrict)
   affectations  AffectationEnseignant[]
+  creneaux      CreneauCours[]
 
   @@map("enseignants")
+}
+
+// Emploi du temps hebdomadaire récurrent (créneau = case de la grille).
+model CreneauCours {
+  id              String   @id @default(cuid())
+  etablissementId String
+  anneeScolaireId String
+  classeId        String
+  matiereId       String
+  enseignantId    String?
+  jour            Int // 1 = Lundi … 6 = Samedi
+  heureDebut      String // "08:00"
+  heureFin        String // "09:00"
+  salle           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  classe     Classe      @relation(fields: [classeId], references: [id], onDelete: Cascade)
+  matiere    Matiere     @relation(fields: [matiereId], references: [id], onDelete: Restrict)
+  enseignant Enseignant? @relation(fields: [enseignantId], references: [id], onDelete: SetNull)
+
+  @@index([anneeScolaireId, classeId])
+  @@map("creneaux_cours")
 }
 
 model AffectationEnseignant {
@@ -789,4 +849,49 @@ model DemandeIA {
 
   @@index([etablissementId, utilisateurId])
   @@map("demandes_ia")
+}
+
+// ─────────────────────────────────────────────
+// DOMAINE 10 — MESSAGERIE INTERNE
+// ─────────────────────────────────────────────
+
+model Conversation {
+  id              String   @id @default(cuid())
+  etablissementId String
+  sujet           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  participants ParticipantConversation[]
+  messages     Message[]
+
+  @@index([etablissementId, updatedAt])
+  @@map("conversations")
+}
+
+model ParticipantConversation {
+  id             String    @id @default(cuid())
+  conversationId String
+  utilisateurId  String
+  luJusquA       DateTime?
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  utilisateur  Utilisateur  @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, utilisateurId])
+  @@map("participants_conversation")
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  expediteurId   String
+  contenu        String
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  expediteur   Utilisateur  @relation(fields: [expediteurId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("messages")
 }

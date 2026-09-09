@@ -1,167 +1,169 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Search, CreditCard, CheckCircle, AlertTriangle, Plus, X } from "lucide-react";
-import { paiements as mockPaiements } from "@/lib/mock-paiements";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Search, CreditCard, CheckCircle, AlertTriangle, Wallet2, Loader2 } from "lucide-react";
+import type { FraisRowDTO } from "@/server/dal/finance";
+import type { ClasseOption } from "@/server/dal/pedagogie";
+import { actionEnregistrerPaiement } from "@/server/actions/finance";
+import { Modale, Champ, Selecteur, Err, ModalActions } from "@/components/portal/_ui";
+import { formatGNF } from "@/lib/format";
 
-export function PaiementsTable() {
-  const [data, setData] = useState(mockPaiements);
+const MODES = [
+  { v: "especes", l: "Espèces" },
+  { v: "mobile", l: "Mobile Money" },
+  { v: "virement", l: "Virement" },
+  { v: "cheque", l: "Chèque" },
+];
+
+export function PaiementsTable({
+  frais,
+  classes,
+}: {
+  frais: FraisRowDTO[];
+  classes: ClasseOption[];
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [query, setQuery] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newPaiement, setNewPaiement] = useState({ eleve: "", classe: "", montantDu: 1000000, montantPaye: 0, mode: "Espèces", echeance: "Mensualité 1" });
+  const [filtreClasse, setFiltreClasse] = useState("Toutes");
+  const [cible, setCible] = useState<FraisRowDTO | null>(null);
+  const [erreur, setErreur] = useState("");
+  const [ok, setOk] = useState("");
 
-  const filtered = useMemo(() => {
-    return data.filter((p) => p.eleve.toLowerCase().includes(query.toLowerCase()));
-  }, [query, data]);
+  const filtered = useMemo(
+    () =>
+      frais.filter((f) => {
+        const q = f.eleve.toLowerCase().includes(query.toLowerCase());
+        const c = filtreClasse === "Toutes" || f.classe === filtreClasse;
+        return q && c;
+      }),
+    [frais, query, filtreClasse],
+  );
 
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat("fr-FR").format(val) + " GNF";
+  const totaux = useMemo(() => {
+    return frais.reduce(
+      (acc, f) => {
+        acc.du += f.montantDu;
+        acc.paye += f.montantPaye;
+        acc.solde += f.solde;
+        return acc;
+      },
+      { du: 0, paye: 0, solde: 0 },
+    );
+  }, [frais]);
+
+  const encaisser = (fd: FormData) => {
+    if (!cible) return;
+    fd.set("fraisEleveId", cible.id);
+    setErreur("");
+    startTransition(async () => {
+      const r = await actionEnregistrerPaiement(fd);
+      if (!r.succes) setErreur(r.erreur);
+      else {
+        setCible(null);
+        setOk(`Paiement encaissé — reçu ${r.data.numeroRecu}`);
+        router.refresh();
+      }
+    });
   };
 
   return (
-    <div className="rounded-2xl border border-neutral-200 bg-white">
-      <div className="border-b border-neutral-100 p-5 flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
-        <div className="relative w-full max-w-xs">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-          <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Chercher un élève..." className="w-full rounded-xl border border-neutral-200 bg-neutral-50 py-2.5 pl-9 pr-3.5 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition" />
-        </div>
-        <button onClick={() => setIsModalOpen(true)} className="inline-flex items-center gap-2 rounded-full bg-green-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-green-700 shadow-md shadow-green-600/20">
-          <Plus className="h-4 w-4" /> Encaisser un paiement
-        </button>
+    <div className="space-y-5">
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Kpi label="Total dû" value={formatGNF(totaux.du)} />
+        <Kpi label="Encaissé" value={formatGNF(totaux.paye)} accent="text-green-600" />
+        <Kpi label="Reste à recouvrer" value={formatGNF(totaux.solde)} accent="text-orange-600" />
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="border-b border-neutral-100 bg-neutral-50/50 text-xs uppercase tracking-wide text-neutral-500">
-              <th className="px-5 py-3.5 font-semibold">Élève / Classe</th>
-              <th className="px-5 py-3.5 font-semibold">Échéance</th>
-              <th className="px-5 py-3.5 font-semibold">Montant Dû</th>
-              <th className="px-5 py-3.5 font-semibold">Montant Payé</th>
-              <th className="px-5 py-3.5 font-semibold">Mode</th>
-              <th className="px-5 py-3.5 font-semibold">Date de paiement</th>
-              <th className="px-5 py-3.5 font-semibold">Statut</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y-2 divide-neutral-200">
-            {filtered.map((p) => (
-              <tr key={p.id} className="hover:bg-blue-50/50 transition">
-                <td className="px-5 py-3.5">
-                  <p className="text-sm font-semibold text-neutral-800">{p.eleve}</p>
-                  <p className="text-xs text-neutral-500">{p.classe}</p>
-                </td>
-                <td className="px-5 py-3.5 text-sm text-neutral-700">{p.echeance}</td>
-                <td className="px-5 py-3.5">
-                  <span className="font-mono text-sm font-medium text-neutral-900">{formatCurrency(p.montantDu)}</span>
-                </td>
-                <td className="px-5 py-3.5">
-                  <span className="font-mono text-sm font-bold text-green-700">{formatCurrency(p.montantPaye)}</span>
-                </td>
-                <td className="px-5 py-3.5 text-xs text-neutral-600">
-                  <div className="flex items-center gap-1">
-                    <CreditCard className="h-3 w-3 text-neutral-400" />
-                    {p.mode}
-                  </div>
-                </td>
-                <td className="px-5 py-3.5 text-xs text-neutral-500">{p.date ? new Date(p.date).toLocaleDateString("fr-FR") : "-"}</td>
-                <td className="px-5 py-3.5">
-                  {p.statut === "Soldé" ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-2.5 py-1 text-[11px] font-semibold text-green-700">
-                      <CheckCircle className="h-3 w-3" /> Soldé
-                    </span>
-                  ) : p.statut === "Partiel" ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-2.5 py-1 text-[11px] font-semibold text-blue-700">
-                      <CheckCircle className="h-3 w-3" /> Partiel
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-2.5 py-1 text-[11px] font-semibold text-red-700">
-                      <AlertTriangle className="h-3 w-3" /> Impayé
-                    </span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {ok && <p className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">{ok}</p>}
 
-      {/* MODALE PAIEMENT */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-neutral-900/50 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold text-neutral-900">Encaisser un paiement</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-neutral-400 hover:text-neutral-700">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            
-            <div className="space-y-4 text-left">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-neutral-700">Nom de l'élève</label>
-                  <input type="text" value={newPaiement.eleve} onChange={e => setNewPaiement({...newPaiement, eleve: e.target.value})} placeholder="Ex: Aliou Diallo" className="mt-1 w-full rounded-xl border border-neutral-200 px-4 py-2 text-sm outline-none focus:border-blue-400" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-neutral-700">Classe</label>
-                  <input type="text" value={newPaiement.classe} onChange={e => setNewPaiement({...newPaiement, classe: e.target.value})} placeholder="Ex: 6ème A" className="mt-1 w-full rounded-xl border border-neutral-200 px-4 py-2 text-sm outline-none focus:border-blue-400" />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-neutral-700">Montant Dû (GNF)</label>
-                  <input type="number" value={newPaiement.montantDu} onChange={e => setNewPaiement({...newPaiement, montantDu: parseInt(e.target.value)})} className="mt-1 w-full rounded-xl border border-neutral-200 px-4 py-2 text-sm outline-none" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-neutral-700">Montant Payé (GNF)</label>
-                  <input type="number" value={newPaiement.montantPaye} onChange={e => setNewPaiement({...newPaiement, montantPaye: parseInt(e.target.value)})} className="mt-1 w-full rounded-xl border border-neutral-200 px-4 py-2 text-sm outline-none" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-neutral-700">Mode de paiement</label>
-                  <select value={newPaiement.mode} onChange={e => setNewPaiement({...newPaiement, mode: e.target.value})} className="mt-1 w-full rounded-xl border border-neutral-200 px-4 py-2 text-sm outline-none">
-                    <option>Espèces</option>
-                    <option>Orange Money</option>
-                    <option>Virement</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-neutral-700">Échéance</label>
-                  <input type="text" value={newPaiement.echeance} onChange={e => setNewPaiement({...newPaiement, echeance: e.target.value})} className="mt-1 w-full rounded-xl border border-neutral-200 px-4 py-2 text-sm outline-none focus:border-blue-400" />
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-end gap-3">
-                <button onClick={() => setIsModalOpen(false)} className="rounded-xl px-4 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100">Annuler</button>
-                <button
-                  onClick={() => {
-                    const statut = newPaiement.montantPaye >= newPaiement.montantDu ? "Soldé" : newPaiement.montantPaye > 0 ? "Partiel" : "Impayé";
-                    setData([{
-                      id: Date.now().toString(),
-                      eleve: newPaiement.eleve,
-                      classe: newPaiement.classe,
-                      echeance: newPaiement.echeance,
-                      montantDu: newPaiement.montantDu,
-                      montantPaye: newPaiement.montantPaye,
-                      mode: newPaiement.mode,
-                      date: new Date().toISOString(),
-                      statut: statut as any
-                    }, ...data]);
-                    setIsModalOpen(false);
-                    setNewPaiement({ eleve: "", classe: "", montantDu: 1000000, montantPaye: 0, mode: "Espèces", echeance: "Mensualité 1" });
-                  }}
-                  className="rounded-xl bg-green-600 px-4 py-2 text-sm font-bold text-white hover:bg-green-700"
-                >
-                  Valider le paiement
-                </button>
-              </div>
-            </div>
+      <div className="rounded-2xl border border-neutral-200 bg-white">
+        <div className="flex flex-col gap-3 border-b border-neutral-100 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative w-full max-w-xs">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+            <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Chercher un élève..." className="w-full rounded-xl border border-neutral-200 bg-neutral-50 py-2.5 pl-9 pr-3.5 text-xs outline-none focus:border-blue-400 transition" />
           </div>
+          <select value={filtreClasse} onChange={(e) => setFiltreClasse(e.target.value)} className="rounded-xl border border-neutral-200 bg-white py-2 px-3 text-xs font-medium text-neutral-700 outline-none focus:border-blue-400">
+            <option>Toutes</option>
+            {classes.map((c) => (<option key={c.id}>{c.nom}</option>))}
+          </select>
         </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-neutral-100 bg-neutral-50/50 text-xs uppercase text-neutral-500">
+                <th className="px-5 py-3">Élève / Classe</th><th className="px-5 py-3">Frais</th>
+                <th className="px-5 py-3">Dû</th><th className="px-5 py-3">Payé</th>
+                <th className="px-5 py-3">Solde</th><th className="px-5 py-3">Statut</th>
+                <th className="px-5 py-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-100">
+              {filtered.map((f) => (
+                <tr key={f.id} className="hover:bg-neutral-50/60">
+                  <td className="px-5 py-3">
+                    <p className="font-semibold text-neutral-800">{f.eleve}</p>
+                    <p className="text-xs text-neutral-500">{f.classe}</p>
+                  </td>
+                  <td className="px-5 py-3 text-neutral-700">{f.echeance}</td>
+                  <td className="px-5 py-3 font-mono">{formatGNF(f.montantDu)}</td>
+                  <td className="px-5 py-3 font-mono font-bold text-green-700">{formatGNF(f.montantPaye)}</td>
+                  <td className="px-5 py-3 font-mono">{f.solde > 0 ? formatGNF(f.solde) : "—"}</td>
+                  <td className="px-5 py-3">
+                    {f.statut === "Soldé" ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-green-700"><CheckCircle className="h-3 w-3" /> Soldé</span>
+                    ) : f.statut === "Partiel" ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-700">Partiel</span>
+                    ) : f.statut === "Annulé" ? (
+                      <span className="rounded-full bg-neutral-200 px-2 py-0.5 text-[11px] font-semibold text-neutral-600">Annulé</span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700"><AlertTriangle className="h-3 w-3" /> Impayé</span>
+                    )}
+                  </td>
+                  <td className="px-5 py-3 text-right">
+                    {f.solde > 0 && f.statut !== "Annulé" && (
+                      <button onClick={() => { setOk(""); setCible(f); }} className="inline-flex items-center gap-1 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700">
+                        <Wallet2 className="h-3.5 w-3.5" /> Encaisser
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {filtered.length === 0 && (
+                <tr><td colSpan={7} className="px-5 py-10 text-center text-neutral-500">Aucun frais. Configurez les échéances et générez les frais.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {cible && (
+        <Modale titre={`Encaisser — ${cible.eleve}`} onClose={() => setCible(null)}>
+          <form action={encaisser} className="space-y-4">
+            <div className="rounded-xl bg-neutral-50 p-3 text-sm text-neutral-600">
+              {cible.echeance} · {cible.classe} · Solde <strong>{formatGNF(cible.solde)}</strong>
+            </div>
+            <Champ name="montant" label="Montant (GNF)" type="number" min="1" max={cible.solde} defaultValue={cible.solde} required />
+            <Selecteur name="modePaiement" label="Mode de paiement" defaultValue="especes" required>
+              {MODES.map((m) => (<option key={m.v} value={m.v}>{m.l}</option>))}
+            </Selecteur>
+            <Champ name="reference" label="Référence (optionnel)" placeholder="N° transaction, chèque…" />
+            {erreur && <Err msg={erreur} />}
+            <ModalActions pending={isPending} onCancel={() => setCible(null)} label="Valider le paiement" />
+          </form>
+        </Modale>
       )}
+    </div>
+  );
+}
+
+function Kpi({ label, value, accent }: { label: string; value: string; accent?: string }) {
+  return (
+    <div className="rounded-2xl border border-neutral-200 bg-white p-5">
+      <p className={`font-display text-xl font-black ${accent ?? "text-neutral-900"}`}>{value}</p>
+      <p className="mt-0.5 text-sm text-neutral-500">{label}</p>
     </div>
   );
 }
