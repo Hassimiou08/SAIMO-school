@@ -49,6 +49,8 @@ model Etablissement {
   journalAudits            JournalAudit[]
   invitations              Invitation[]
   preInscriptions          PreInscription[]
+  depenses                 Depense[]
+  salaires                 Salaire[]
 
   @@map("etablissements")
 }
@@ -176,6 +178,7 @@ model Utilisateur {
   eleveCompte      Eleve?                    @relation("CompteEleve")
   conversations    ParticipantConversation[]
   messagesEnvoyes  Message[]
+  salaires         Salaire[]                 @relation("SalairesEmploye")
 
   @@map("utilisateurs")
 }
@@ -770,6 +773,61 @@ model Remise {
   fraisEleve FraisEleve @relation(fields: [fraisEleveId], references: [id], onDelete: Restrict)
 
   @@map("remises")
+}
+
+// Décaissements / charges de l'établissement (hors salaires versés via Salaire)
+model Depense {
+  id              String    @id @default(cuid())
+  etablissementId String
+  date            DateTime
+  categorie       String    // Fournitures, Factures, Maintenance, Transport...
+  description     String
+  montant         Decimal   @db.Decimal(12, 2)
+  beneficiaire    String
+  // planifie, paye
+  statut          String    @default("planifie")
+  modePaiement    String?   // especes, cheque, virement, mobile
+  datePaiement    DateTime?
+  creeParId       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  etablissement Etablissement @relation(fields: [etablissementId], references: [id], onDelete: Cascade)
+
+  @@index([etablissementId, statut])
+  @@map("depenses")
+}
+
+// Ligne de paie du personnel pour un mois donné (regroupées par `mois`)
+model Salaire {
+  id                  String    @id @default(cuid())
+  etablissementId     String
+  mois                String    // "2026-10"
+  employeNom          String
+  employeUtilisateurId String?
+  role                String    // Enseignant, Administration, Entretien...
+  // fixe, horaire
+  typeContrat         String    @default("fixe")
+  heures              Decimal?  @db.Decimal(8, 2)
+  tauxHoraire         Decimal?  @db.Decimal(12, 2)
+  salaireBase         Decimal?  @db.Decimal(12, 2)
+  primes              Decimal   @default(0) @db.Decimal(12, 2)
+  retenues            Decimal   @default(0) @db.Decimal(12, 2)
+  netAPayer           Decimal   @db.Decimal(12, 2)
+  // attente, paye
+  statut              String    @default("attente")
+  modePaiement        String?
+  datePaiement        DateTime?
+  creeParId           String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  etablissement Etablissement @relation(fields: [etablissementId], references: [id], onDelete: Cascade)
+  employe       Utilisateur?  @relation("SalairesEmploye", fields: [employeUtilisateurId], references: [id], onDelete: SetNull)
+
+  @@unique([etablissementId, mois, employeNom])
+  @@index([etablissementId, mois])
+  @@map("salaires")
 }
 
 // ─────────────────────────────────────────────

@@ -50,6 +50,8 @@ export type Permission =
   | "paiement:view"
   | "recu:generer"
   | "rapport:financier"
+  | "depense:gerer"
+  | "salaire:gerer"
   // Rapports & Tableaux de bord
   | "rapport:view"
   | "rapport:export"
@@ -115,6 +117,8 @@ const permissionsParRole: Record<RoleUtilisateur, Permission[]> = {
     "paiement:view",
     "recu:generer",
     "rapport:financier",
+    "depense:gerer",
+    "salaire:gerer",
     "rapport:view",
     "rapport:export",
     "email:envoyer",
@@ -144,6 +148,8 @@ const permissionsParRole: Record<RoleUtilisateur, Permission[]> = {
     "presence:justifier",
     "paiement:view",
     "rapport:financier",
+    "depense:gerer",
+    "salaire:gerer",
     "rapport:view",
     "rapport:export",
     "email:envoyer",
@@ -180,8 +186,12 @@ const permissionsParRole: Record<RoleUtilisateur, Permission[]> = {
     "paiement:view",
     "recu:generer",
     "rapport:financier",
+    "depense:gerer",
+    "salaire:gerer",
     "rapport:view",
     "rapport:export",
+    "email:envoyer",
+    "annonce:create",
     "annonce:view",
   ],
 

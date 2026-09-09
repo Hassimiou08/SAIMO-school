@@ -1,9 +1,17 @@
 "use client";
 
 import { Bell, Search, Settings } from "lucide-react";
-import { comptaUser } from "@/lib/mock-compta";
+import {
+  useCurrentUserOptional,
+  libelleRole,
+  initiales,
+} from "@/components/providers/UserProvider";
 
 export function ComptaTopbar() {
+  const user = useCurrentUserOptional();
+  const nom = user?.name ?? "Utilisateur";
+  const roleLabel = user ? libelleRole(user.role) : "Comptabilité";
+
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-neutral-200 bg-white/80 px-6 backdrop-blur-md lg:pl-10">
       <div className="relative hidden sm:block w-72">
@@ -28,11 +36,11 @@ export function ComptaTopbar() {
 
         <div className="flex items-center gap-2.5 border-l border-neutral-200 pl-4 ml-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700 shadow-sm border border-indigo-200">
-            {comptaUser.initials}
+            {initiales(nom)}
           </div>
           <div className="hidden sm:block leading-none">
-            <p className="text-sm font-bold text-neutral-900">{comptaUser.nom}</p>
-            <p className="text-[11px] text-indigo-600 font-medium">{comptaUser.role}</p>
+            <p className="text-sm font-bold text-neutral-900">{nom}</p>
+            <p className="text-[11px] text-indigo-600 font-medium">{roleLabel}</p>
           </div>
         </div>
       </div>

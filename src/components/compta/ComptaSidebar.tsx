@@ -4,9 +4,15 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
   LayoutDashboard, ArrowDownRight, ArrowUpRight,
-  Calculator, FileBarChart, LogOut, Wallet, ChevronRight,
+  Calculator, FileBarChart, Wallet, ChevronRight,
   Megaphone, MessageSquare
 } from "lucide-react";
+import { LogoutButton } from "@/components/auth/LogoutButton";
+import {
+  useCurrentUserOptional,
+  libelleRole,
+  initiales,
+} from "@/components/providers/UserProvider";
 
 const NAV = [
   { icon: LayoutDashboard, label: "Tableau de bord",        href: "/compta" },
@@ -20,6 +26,9 @@ const NAV = [
 
 export function ComptaSidebar() {
   const pathname = usePathname();
+  const user = useCurrentUserOptional();
+  const nom = user?.name ?? "Utilisateur";
+  const roleLabel = user ? libelleRole(user.role) : "Comptabilité";
   const isActive = (href: string) =>
     href === "/compta" ? pathname === href : pathname.startsWith(href);
 
@@ -71,20 +80,17 @@ export function ComptaSidebar() {
         <div className="border-t border-slate-700/60 p-4 space-y-3">
           <div className="flex items-center gap-3 px-1">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-blue-500 text-xs font-bold text-white flex-shrink-0">
-              MD
+              {initiales(nom)}
             </div>
             <div className="leading-none min-w-0">
-              <p className="text-sm font-semibold text-white truncate">Mamadou Diallo</p>
-              <p className="text-[11px] text-cyan-300 font-medium">Chef Comptable</p>
+              <p className="text-sm font-semibold text-white truncate">{nom}</p>
+              <p className="text-[11px] text-cyan-300 font-medium">{roleLabel}</p>
             </div>
           </div>
-          <a
-            href="/connexion"
+          <LogoutButton
+            label="Déconnexion"
             className="flex items-center justify-center gap-2 w-full rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-blue-100/70 transition hover:bg-red-500/15 hover:text-red-400 border border-transparent hover:border-red-500/20"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            Déconnexion
-          </a>
+          />
         </div>
       </div>
     </aside>

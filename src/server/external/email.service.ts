@@ -239,3 +239,43 @@ export async function envoyerNotifBulletin(params: {
     etablissementId: params.etablissementId,
   });
 }
+
+// ─── Relance des frais échus impayés (portail comptable) ────────────
+
+export async function envoyerRelanceFrais(params: {
+  email: string;
+  prenomParent: string;
+  lignes: { eleve: string; motif: string; solde: number }[];
+  total: number;
+  devise: string;
+  message?: string | null;
+  etablissementId: string;
+}) {
+  const rows = params.lignes
+    .map(
+      (l) =>
+        `<tr><td style="padding:8px;border:1px solid #ddd">${l.eleve}</td>` +
+        `<td style="padding:8px;border:1px solid #ddd">${l.motif}</td>` +
+        `<td style="padding:8px;border:1px solid #ddd;text-align:right">${l.solde.toLocaleString("fr-FR")} ${params.devise}</td></tr>`,
+    )
+    .join("");
+  const html = templateBase(
+    `<p>Bonjour <strong>${params.prenomParent}</strong>,</p>
+     <p>${params.message?.trim() || "Nous vous informons que des frais de scolarité restent dus. Merci de bien vouloir procéder au règlement dans les meilleurs délais."}</p>
+     <table style="width:100%;border-collapse:collapse;margin:16px 0">
+       <tr><th style="padding:8px;border:1px solid #ddd;text-align:left">Élève</th><th style="padding:8px;border:1px solid #ddd;text-align:left">Motif</th><th style="padding:8px;border:1px solid #ddd;text-align:right">Solde</th></tr>
+       ${rows}
+       <tr><td colspan="2" style="padding:8px;border:1px solid #ddd"><strong>Total dû</strong></td><td style="padding:8px;border:1px solid #ddd;text-align:right"><strong>${params.total.toLocaleString("fr-FR")} ${params.devise}</strong></td></tr>
+     </table>
+     <p>Pour toute question, rapprochez-vous du service comptable de l'établissement.</p>`,
+    "Relance de paiement",
+  );
+  await envoyerEmail({
+    type: "rappel_echeance",
+    destinataireEmail: params.email,
+    destinataireNom: params.prenomParent,
+    sujet: `Relance — frais de scolarité en attente de règlement`,
+    htmlContent: html,
+    etablissementId: params.etablissementId,
+  });
+}
