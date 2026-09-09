@@ -127,27 +127,47 @@ export async function actionMarquerDepensePayee(
 // Salaires
 // ─────────────────────────────────────────────────────────────
 
+const champsSalaire = {
+  employeNom: z.string().min(1, "Nom de l'employé requis").max(120),
+  role: z.string().min(1).max(60),
+  typeContrat: z.enum(["fixe", "horaire"]).default("fixe"),
+  heures: z.coerce.number().min(0).optional(),
+  tauxHoraire: z.coerce.number().min(0).optional(),
+  salaireBase: z.coerce.number().min(0).optional(),
+  primes: z.coerce.number().min(0).default(0),
+  retenues: z.coerce.number().min(0).default(0),
+};
+
+const refineMontants = (d: {
+  typeContrat: "fixe" | "horaire";
+  heures?: number;
+  tauxHoraire?: number;
+  salaireBase?: number;
+}) =>
+  d.typeContrat === "horaire"
+    ? (d.heures ?? 0) > 0 && (d.tauxHoraire ?? 0) > 0
+    : (d.salaireBase ?? 0) > 0;
+const messageMontants = {
+  message: "Renseignez la base (fixe) ou heures + taux (horaire)",
+};
+
 const schemaSalaire = z
   .object({
     mois: z.string().regex(/^\d{4}-\d{2}$/, "Mois invalide (AAAA-MM)"),
-    employeNom: z.string().min(1, "Nom de l'employé requis").max(120),
-    role: z.string().min(1).max(60),
-    typeContrat: z.enum(["fixe", "horaire"]).default("fixe"),
-    heures: z.coerce.number().min(0).optional(),
-    tauxHoraire: z.coerce.number().min(0).optional(),
-    salaireBase: z.coerce.number().min(0).optional(),
-    primes: z.coerce.number().min(0).default(0),
-    retenues: z.coerce.number().min(0).default(0),
+    ...champsSalaire,
   })
-  .refine(
-    (d) =>
-      d.typeContrat === "horaire"
-        ? (d.heures ?? 0) > 0 && (d.tauxHoraire ?? 0) > 0
-        : (d.salaireBase ?? 0) > 0,
-    { message: "Renseignez la base (fixe) ou heures + taux (horaire)" },
-  );
+  .refine(refineMontants, messageMontants);
 
-function calculerNet(d: z.infer<typeof schemaSalaire>): number {
+const schemaModifSalaire = z.object(champsSalaire).refine(refineMontants, messageMontants);
+
+function calculerNet(d: {
+  typeContrat: "fixe" | "horaire";
+  heures?: number;
+  tauxHoraire?: number;
+  salaireBase?: number;
+  primes?: number;
+  retenues?: number;
+}): number {
   const brut =
     d.typeContrat === "horaire"
       ? (d.heures ?? 0) * (d.tauxHoraire ?? 0)
@@ -206,6 +226,82 @@ export async function actionCreerSalaire(
       apres: { employeNom: d.employeNom, mois: d.mois, netAPayer: calculerNet(d) },
     });
     revalidatePath("/compta/salaires");
+    return { succes: true, data: undefined };
+  } catch (e) {
+    return { succes: false, erreur: msg(e) };
+  }
+}
+
+/**
+ * Corrige les montants d'une ligne de paie. Si elle était déjà réglée,
+ * elle repasse « en attente » (le montant enregistré était erroné → à re-payer).
+ */
+export async function actionModifierSalaire(
+  id: string,
+  formData: FormData,
+): Promise<ActionResult> {
+  try {
+    const ctx = await requireContext();
+    requirePermission(ctx.role, "salaire:gerer");
+
+    const existant = await prisma.salaire.findFirst({
+      where: { id, etablissementId: ctx.etablissementId },
+    });
+    if (!existant) return { succes: false, erreur: "Ligne de paie introuvable" };
+
+    const parsed = schemaModifSalaire.safeParse({
+      employeNom: s(formData.get("employeNom")),
+      role: s(formData.get("role")) ?? existant.role,
+      typeContrat: s(formData.get("typeContrat")) ?? "fixe",
+      heures: formData.get("heures") || undefined,
+      tauxHoraire: formData.get("tauxHoraire") || undefined,
+      salaireBase: formData.get("salaireBase") || undefined,
+      primes: formData.get("primes") || 0,
+      retenues: formData.get("retenues") || 0,
+    });
+    if (!parsed.success) {
+      return {
+        succes: false,
+        erreur: parsed.error.issues[0]?.message ?? "Données invalides",
+      };
+    }
+    const d = parsed.data;
+    const etaitPaye = existant.statut === "paye";
+
+    await prisma.salaire.update({
+      where: { id },
+      data: {
+        employeNom: d.employeNom,
+        role: d.role,
+        typeContrat: d.typeContrat,
+        heures: d.typeContrat === "horaire" ? d.heures : null,
+        tauxHoraire: d.typeContrat === "horaire" ? d.tauxHoraire : null,
+        salaireBase: d.typeContrat === "fixe" ? d.salaireBase : null,
+        primes: d.primes,
+        retenues: d.retenues,
+        netAPayer: calculerNet(d),
+        ...(etaitPaye
+          ? { statut: "attente", modePaiement: null, datePaiement: null }
+          : {}),
+      },
+    });
+    await audit({
+      utilisateurId: ctx.utilisateurId,
+      etablissementId: ctx.etablissementId,
+      action: AuditAction.UPDATE,
+      entite: "Salaire",
+      entiteId: id,
+      avant: {
+        netAPayer: Number(existant.netAPayer),
+        statut: existant.statut,
+      },
+      apres: {
+        netAPayer: calculerNet(d),
+        statut: etaitPaye ? "attente (corrigé)" : existant.statut,
+      },
+    });
+    revalidatePath("/compta/salaires");
+    revalidatePath("/compta");
     return { succes: true, data: undefined };
   } catch (e) {
     return { succes: false, erreur: msg(e) };
@@ -305,24 +401,36 @@ export async function actionGenererPaieMois(
     });
     const dejaLa = new Set(existants.map((e) => e.employeNom));
 
+    // Reprise des montants du dernier mois connu pour chaque employé.
+    const anterieurs = await prisma.salaire.findMany({
+      where: { etablissementId: ctx.etablissementId, mois: { lt: mois } },
+      orderBy: { mois: "desc" },
+    });
+    const dernierParEmploye = new Map<string, (typeof anterieurs)[number]>();
+    for (const a of anterieurs) {
+      if (!dernierParEmploye.has(a.employeNom)) dernierParEmploye.set(a.employeNom, a);
+    }
+
     const aCreer = enseignants
-      .map((e) => `${e.utilisateur.prenom} ${e.utilisateur.nom}`)
-      .filter((nom) => !dejaLa.has(nom))
-      .map((nom, i) => {
-        const ens = enseignants.find(
-          (e) => `${e.utilisateur.prenom} ${e.utilisateur.nom}` === nom,
-        )!;
+      .filter(
+        (e) => !dejaLa.has(`${e.utilisateur.prenom} ${e.utilisateur.nom}`),
+      )
+      .map((ens) => {
+        const nom = `${ens.utilisateur.prenom} ${ens.utilisateur.nom}`;
+        const p = dernierParEmploye.get(nom);
         return {
           etablissementId: ctx.etablissementId,
           mois,
           employeNom: nom,
           employeUtilisateurId: ens.utilisateur.id,
-          role: "Enseignant",
-          typeContrat: "fixe",
-          salaireBase: 0,
-          primes: 0,
-          retenues: 0,
-          netAPayer: 0,
+          role: p?.role ?? "Enseignant",
+          typeContrat: p?.typeContrat ?? "fixe",
+          heures: p?.heures ?? null,
+          tauxHoraire: p?.tauxHoraire ?? null,
+          salaireBase: p?.salaireBase ?? (p ? null : 0),
+          primes: p ? Number(p.primes) : 0,
+          retenues: p ? Number(p.retenues) : 0,
+          netAPayer: p ? Number(p.netAPayer) : 0,
         };
       });
 

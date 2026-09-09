@@ -3,10 +3,11 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Plus, Search, CheckCircle, Clock, Sparkles } from "lucide-react";
+import { Plus, Search, CheckCircle, Clock, Sparkles, Pencil } from "lucide-react";
 import type { ListeSalaires, SalaireRow } from "@/server/dal/compta";
 import {
   actionCreerSalaire,
+  actionModifierSalaire,
   actionPayerSalaire,
   actionPayerSalairesGroupe,
   actionGenererPaieMois,
@@ -40,8 +41,21 @@ export function SalairesManager({ data }: { data: ListeSalaires }) {
   const [q, setQ] = useState("");
   const [selection, setSelection] = useState<string[]>([]);
   const [modalNouveau, setModalNouveau] = useState(false);
+  const [edition, setEdition] = useState<SalaireRow | null>(null);
   const [typeContrat, setTypeContrat] = useState<"fixe" | "horaire">("fixe");
   const [erreur, setErreur] = useState("");
+
+  const formOuvert = modalNouveau || edition !== null;
+  const fermerForm = () => {
+    setModalNouveau(false);
+    setEdition(null);
+    setErreur("");
+  };
+  const ouvrirEdition = (l: SalaireRow) => {
+    setErreur("");
+    setEdition(l);
+    setTypeContrat(l.typeContrat);
+  };
 
   // Modale de paiement (individuel ou groupé)
   const [paiement, setPaiement] = useState<{ ids: string[]; total: number } | null>(
@@ -80,14 +94,16 @@ export function SalairesManager({ data }: { data: ListeSalaires }) {
       prev.length === payables.length ? [] : payables.map((l) => l.id),
     );
 
-  const creer = (fd: FormData) => {
+  const soumettre = (fd: FormData) => {
     setErreur("");
     startTransition(async () => {
-      const r = await actionCreerSalaire(fd);
+      const r = edition
+        ? await actionModifierSalaire(edition.id, fd)
+        : await actionCreerSalaire(fd);
       if (!r.succes) setErreur(r.erreur);
       else {
-        toast.success("Ligne de paie ajoutée");
-        setModalNouveau(false);
+        toast.success(edition ? "Ligne de paie corrigée" : "Ligne de paie ajoutée");
+        fermerForm();
         router.refresh();
       }
     });
@@ -159,6 +175,7 @@ export function SalairesManager({ data }: { data: ListeSalaires }) {
           <button
             onClick={() => {
               setErreur("");
+              setEdition(null);
               setTypeContrat("fixe");
               setModalNouveau(true);
             }}
@@ -287,18 +304,27 @@ export function SalairesManager({ data }: { data: ListeSalaires }) {
                     </span>
                   )}
                 </td>
-                <td className="px-6 py-4 text-right">
-                  {s.statut === "attente" && (
+                <td className="px-6 py-4">
+                  <div className="flex items-center justify-end gap-2">
                     <button
-                      onClick={() => {
-                        setPaiement({ ids: [s.id], total: s.netAPayer });
-                        setMode("virement");
-                      }}
-                      className="rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-700 shadow-sm transition hover:bg-neutral-50"
+                      onClick={() => ouvrirEdition(s)}
+                      title="Modifier les montants"
+                      className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-bold text-neutral-600 shadow-sm transition hover:bg-neutral-50"
                     >
-                      Payer
+                      <Pencil className="h-3.5 w-3.5" /> Modifier
                     </button>
-                  )}
+                    {s.statut === "attente" && (
+                      <button
+                        onClick={() => {
+                          setPaiement({ ids: [s.id], total: s.netAPayer });
+                          setMode("virement");
+                        }}
+                        className="rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-700 shadow-sm transition hover:bg-neutral-50"
+                      >
+                        Payer
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -337,14 +363,41 @@ export function SalairesManager({ data }: { data: ListeSalaires }) {
         </div>
       )}
 
-      {/* Modale nouvelle ligne */}
-      {modalNouveau && (
-        <Modale titre="Nouvelle ligne de paie" onClose={() => setModalNouveau(false)} large>
-          <form action={creer} className="space-y-4">
-            <input type="hidden" name="mois" value={data.mois} />
+      {/* Modale nouvelle ligne / correction */}
+      {formOuvert && (
+        <Modale
+          titre={
+            edition
+              ? `Corriger la paie — ${edition.employeNom}`
+              : "Nouvelle ligne de paie"
+          }
+          onClose={fermerForm}
+          large
+        >
+          <form
+            key={edition?.id ?? "nouveau"}
+            action={soumettre}
+            className="space-y-4"
+          >
+            {!edition && <input type="hidden" name="mois" value={data.mois} />}
+            {edition?.statut === "paye" && (
+              <p className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-700">
+                Cette ligne est déjà réglée. La correction la repassera «&nbsp;en
+                attente&nbsp;» pour un nouveau règlement au bon montant.
+              </p>
+            )}
             <div className="grid grid-cols-2 gap-4">
-              <Champ label="Nom de l'employé" name="employeNom" required />
-              <Selecteur label="Rôle" name="role" defaultValue="Enseignant">
+              <Champ
+                label="Nom de l'employé"
+                name="employeNom"
+                required
+                defaultValue={edition?.employeNom ?? ""}
+              />
+              <Selecteur
+                label="Rôle"
+                name="role"
+                defaultValue={edition?.role ?? "Enseignant"}
+              >
                 {ROLES.map((r) => (
                   <option key={r} value={r}>
                     {r}
@@ -362,21 +415,65 @@ export function SalairesManager({ data }: { data: ListeSalaires }) {
               <option value="horaire">Horaire</option>
             </Selecteur>
             {typeContrat === "fixe" ? (
-              <Champ label="Salaire de base (GNF)" name="salaireBase" type="number" min="0" required />
+              <Champ
+                label="Salaire de base (GNF)"
+                name="salaireBase"
+                type="number"
+                min="0"
+                required
+                defaultValue={
+                  edition?.typeContrat === "fixe" && edition.salaireBase != null
+                    ? String(edition.salaireBase)
+                    : ""
+                }
+              />
             ) : (
               <div className="grid grid-cols-2 gap-4">
-                <Champ label="Heures" name="heures" type="number" min="0" step="0.5" required />
-                <Champ label="Taux horaire (GNF)" name="tauxHoraire" type="number" min="0" required />
+                <Champ
+                  label="Heures"
+                  name="heures"
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  required
+                  defaultValue={
+                    edition?.heures != null ? String(edition.heures) : ""
+                  }
+                />
+                <Champ
+                  label="Taux horaire (GNF)"
+                  name="tauxHoraire"
+                  type="number"
+                  min="0"
+                  required
+                  defaultValue={
+                    edition?.tauxHoraire != null
+                      ? String(edition.tauxHoraire)
+                      : ""
+                  }
+                />
               </div>
             )}
             <div className="grid grid-cols-2 gap-4">
-              <Champ label="Primes (GNF)" name="primes" type="number" min="0" defaultValue="0" />
-              <Champ label="Retenues (GNF)" name="retenues" type="number" min="0" defaultValue="0" />
+              <Champ
+                label="Primes (GNF)"
+                name="primes"
+                type="number"
+                min="0"
+                defaultValue={String(edition?.primes ?? 0)}
+              />
+              <Champ
+                label="Retenues (GNF)"
+                name="retenues"
+                type="number"
+                min="0"
+                defaultValue={String(edition?.retenues ?? 0)}
+              />
             </div>
             {erreur && <Err msg={erreur} />}
             <ModalActions
-              onCancel={() => setModalNouveau(false)}
-              label="Ajouter la ligne"
+              onCancel={fermerForm}
+              label={edition ? "Enregistrer la correction" : "Ajouter la ligne"}
               pending={isPending}
             />
           </form>
