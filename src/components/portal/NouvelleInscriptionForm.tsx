@@ -6,7 +6,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, UserPlus, Save, Loader2, ChevronRight, ChevronLeft, Info, AlertTriangle } from "lucide-react";
 import type { ClasseOptionDTO } from "@/server/dal/classes";
-import { actionInscrireEleveComplet, type ActionResult } from "@/server/actions/eleves";
+import { toast } from "sonner";
+import { useExecuterOperation, type ResultatHorsLigne } from "@/lib/offline/client";
+import { versEntrees } from "@/lib/offline/operations";
 import { FilParcours, ETAPES_INSCRIPTION } from "@/components/portal/FilParcours";
 
 const champ =
@@ -34,15 +36,27 @@ export function NouvelleInscriptionForm({ classes }: { classes: ClasseOptionDTO[
   const [classeId, setClasseId] = useState("");
   const classeChoisie = classes.find((c) => c.id === classeId);
 
-  const [state, formAction] = useActionState<ActionResult<Resultat> | null, FormData>(
-    async (_p, fd) => actionInscrireEleveComplet(fd),
+  const executer = useExecuterOperation();
+  const [state, formAction] = useActionState<ResultatHorsLigne<Resultat> | null, FormData>(
+    async (_p, fd) =>
+      executer<"eleve.inscrire", Resultat>(
+        "eleve.inscrire",
+        { form: versEntrees(fd) },
+        `Inscription — ${fd.get("prenom")} ${fd.get("nom")}`,
+      ),
     null,
   );
 
   useEffect(() => {
-    if (state?.succes) {
-      router.push(`/portail/eleves/${state.data.eleveId}/finaliser`);
+    if (!state?.succes) return;
+    if (state.enAttente) {
+      // Hors ligne : l'élève (et son matricule) sera créé à la synchronisation ;
+      // l'encaissement se fera ensuite depuis sa fiche.
+      toast.info("Inscription enregistrée sur cet appareil : elle sera créée au retour de la connexion.");
+      router.push("/portail/eleves");
+      return;
     }
+    router.push(`/portail/eleves/${state.data.eleveId}/finaliser`);
   }, [state, router]);
 
   const suivant = () => {

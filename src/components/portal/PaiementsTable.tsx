@@ -6,7 +6,8 @@ import { toast } from "sonner";
 import { Search, CheckCircle, AlertTriangle, Wallet2 } from "lucide-react";
 import type { FraisRowDTO } from "@/server/dal/finance";
 import type { ClasseOption } from "@/server/dal/pedagogie";
-import { actionEnregistrerPaiement } from "@/server/actions/finance";
+import { useExecuterOperation } from "@/lib/offline/client";
+import { versEntrees } from "@/lib/offline/operations";
 import { Modale, Champ, Selecteur, Err, ModalActions } from "@/components/portal/_ui";
 import { formatGNF } from "@/lib/format";
 
@@ -25,6 +26,7 @@ export function PaiementsTable({
   classes: ClasseOption[];
 }) {
   const router = useRouter();
+  const executer = useExecuterOperation();
   const [isPending, startTransition] = useTransition();
   const [query, setQuery] = useState("");
   const [filtreClasse, setFiltreClasse] = useState("Toutes");
@@ -57,9 +59,16 @@ export function PaiementsTable({
     if (!cible) return;
     fd.set("fraisEleveId", cible.id);
     setErreur("");
+    const libelle = `Encaissement — ${cible.eleve} : ${formatGNF(Number(fd.get("montant")) || 0)}`;
     startTransition(async () => {
-      const r = await actionEnregistrerPaiement(fd);
+      const r = await executer<"paiement.enregistrer", { numeroRecu: string; paiementId: string }>(
+        "paiement.enregistrer", { form: versEntrees(fd) }, libelle,
+      );
       if (!r.succes) setErreur(r.erreur);
+      else if (r.enAttente) {
+        setCible(null);
+        toast.info("Encaissement enregistré sur cet appareil. Le reçu sera numéroté à la synchronisation.");
+      }
       else {
         setCible(null);
         toast.success(`Paiement encaissé — reçu ${r.data.numeroRecu}`);

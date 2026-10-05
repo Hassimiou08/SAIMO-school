@@ -51,6 +51,7 @@ export async function creerPaiement(data: {
   reference?: string;
   observation?: string;
   encaisseParId?: string;
+  date?: Date;
 }) {
   return prisma.$transaction(async (tx) => {
     const paiement = await tx.paiement.create({
@@ -62,6 +63,7 @@ export async function creerPaiement(data: {
         reference: data.reference,
         observation: data.observation,
         encaisseParId: data.encaisseParId,
+        ...(data.date ? { createdAt: data.date } : {}),
         statut: "valide",
       },
     });

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { ShieldAlert, RotateCcw } from "lucide-react";
+import { ErreurHorsLigne, useHorsLigne } from "@/components/offline/ErreurHorsLigne";
 
 export default function ComptaError({
   error,
@@ -16,6 +17,8 @@ export default function ComptaError({
   }, [error]);
 
   const estAcces = /autoris|permission|Accès/i.test(error.message);
+  const horsLigne = useHorsLigne();
+  if (horsLigne) return <ErreurHorsLigne reset={reset} accueil="/compta" />;
 
   return (
     <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-6">

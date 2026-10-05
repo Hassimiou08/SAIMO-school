@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUserView, homeForRole } from "@/server/context";
 import { UserProvider } from "@/components/providers/UserProvider";
+import { SyncHorsLigne } from "@/components/offline/SyncHorsLigne";
 import { EnfantsProvider } from "@/components/parent/EnfantsProvider";
 import { mesEnfants, getContexteParent } from "@/server/dal/parent";
 
@@ -22,6 +23,7 @@ export default async function ParentLayout({
       <EnfantsProvider value={{ enfants, estEleve: ctx.estEleve }}>
         {children}
       </EnfantsProvider>
+      <SyncHorsLigne />
     </UserProvider>
   );
 }

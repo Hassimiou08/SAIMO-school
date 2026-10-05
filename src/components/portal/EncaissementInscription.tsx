@@ -4,7 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Wallet2, CheckCircle2, ChevronRight, Printer } from "lucide-react";
-import { actionEnregistrerPaiement } from "@/server/actions/finance";
+import { useExecuterOperation } from "@/lib/offline/client";
+import { versEntrees } from "@/lib/offline/operations";
 import { formatGNF } from "@/lib/format";
 
 const MODES = [
@@ -31,6 +32,7 @@ export function EncaissementInscription({
   frais: FraisAEncaisser[];
 }) {
   const router = useRouter();
+  const executer = useExecuterOperation();
   const [isPending, startTransition] = useTransition();
   const [payes, setPayes] = useState<Record<string, { recu: string; montant: number }>>({});
   const [erreur, setErreur] = useState("");
@@ -38,13 +40,19 @@ export function EncaissementInscription({
   const encaisser = (fraisId: string, fd: FormData) => {
     fd.set("fraisEleveId", fraisId);
     setErreur("");
+    const ligne = frais.find((f) => f.id === fraisId);
+    const montant = Number(fd.get("montant"));
+    const libelle = `Encaissement — ${matricule ?? "élève"}, ${ligne?.libelle ?? "frais"} : ${formatGNF(montant || 0)}`;
     startTransition(async () => {
-      const r = await actionEnregistrerPaiement(fd);
+      const r = await executer<"paiement.enregistrer", { numeroRecu: string; paiementId: string }>(
+        "paiement.enregistrer", { form: versEntrees(fd) }, libelle,
+      );
       if (!r.succes) setErreur(r.erreur);
       else
         setPayes((p) => ({
           ...p,
-          [fraisId]: { recu: r.data.numeroRecu, montant: Number(fd.get("montant")) },
+          // Hors ligne, le numéro de reçu n'est attribué qu'à la synchronisation.
+          [fraisId]: { recu: r.enAttente ? "en attente de synchronisation" : r.data.numeroRecu, montant },
         }));
     });
   };

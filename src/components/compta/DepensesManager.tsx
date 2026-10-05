@@ -5,10 +5,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Plus, Search, CheckCircle, Clock } from "lucide-react";
 import type { DepenseRow } from "@/server/dal/compta";
-import {
-  actionCreerDepense,
-  actionMarquerDepensePayee,
-} from "@/server/actions/compta";
+import { useExecuterOperation } from "@/lib/offline/client";
+import { versEntrees } from "@/lib/offline/operations";
 import { Modale, Champ, Selecteur, Err, ModalActions } from "@/components/portal/_ui";
 import { formatGNF } from "@/lib/format";
 
@@ -30,6 +28,7 @@ const MODES = [
 
 export function DepensesManager({ depenses }: { depenses: DepenseRow[] }) {
   const router = useRouter();
+  const executer = useExecuterOperation();
   const [isPending, startTransition] = useTransition();
   const [q, setQ] = useState("");
   const [modal, setModal] = useState(false);
@@ -50,9 +49,14 @@ export function DepensesManager({ depenses }: { depenses: DepenseRow[] }) {
 
   const creer = (fd: FormData) => {
     setErreur("");
+    const libelle = `Dépense — ${fd.get("beneficiaire") || fd.get("categorie") || "nouvelle"} : ${formatGNF(Number(fd.get("montant")) || 0)}`;
     startTransition(async () => {
-      const r = await actionCreerDepense(fd);
+      const r = await executer("depense.creer", { form: versEntrees(fd) }, libelle);
       if (!r.succes) setErreur(r.erreur);
+      else if (r.enAttente) {
+        toast.info("Dépense enregistrée sur cet appareil : elle sera envoyée au retour de la connexion.");
+        setModal(false);
+      }
       else {
         toast.success("Dépense enregistrée");
         setModal(false);
@@ -64,8 +68,16 @@ export function DepensesManager({ depenses }: { depenses: DepenseRow[] }) {
   const confirmerPaiement = () => {
     if (!payer) return;
     startTransition(async () => {
-      const r = await actionMarquerDepensePayee(payer.id, mode);
+      const r = await executer(
+        "depense.payer",
+        { depenseId: payer.id, mode },
+        `Règlement dépense — ${payer.beneficiaire} : ${formatGNF(payer.montant)}`,
+      );
       if (!r.succes) toast.error(r.erreur);
+      else if (r.enAttente) {
+        toast.info("Règlement enregistré sur cet appareil : il sera envoyé au retour de la connexion.");
+        setPayer(null);
+      }
       else {
         toast.success("Dépense réglée");
         setPayer(null);

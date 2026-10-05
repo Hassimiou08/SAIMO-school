@@ -1,15 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireContext, requirePermission } from "@/server/context";
 import { audit, AuditAction } from "@/server/logs/audit";
-import {
-  enregistrerPaiement,
-  annulerUnPaiement,
-} from "@/server/services/paiement.service";
-import { envoyerRecuPaiement } from "@/server/external/email.service";
+import { annulerUnPaiement } from "@/server/services/paiement.service";
+import { encaisserDepuisFormulaire } from "@/server/services/encaissement.service";
 import type { ActionResult } from "./eleves";
 
 import { messageErreur as msg } from "@/server/errors";
@@ -20,76 +16,10 @@ const s = (v: FormDataEntryValue | null) => {
 
 // ─── Encaisser un paiement ──────────────────────────────────
 
-const schemaPaiement = z.object({
-  fraisEleveId: z.string().min(1),
-  montant: z.coerce.number().positive("Montant invalide"),
-  modePaiement: z.enum(["especes", "cheque", "virement", "mobile"]),
-  reference: z.string().max(80).optional(),
-});
-
 export async function actionEnregistrerPaiement(
   formData: FormData,
 ): Promise<ActionResult<{ numeroRecu: string; paiementId: string }>> {
-  try {
-    const ctx = await requireContext();
-    requirePermission(ctx.role, "paiement:enregistrer");
-
-    const parsed = schemaPaiement.safeParse({
-      fraisEleveId: formData.get("fraisEleveId"),
-      montant: formData.get("montant"),
-      modePaiement: formData.get("modePaiement"),
-      reference: s(formData.get("reference")),
-    });
-    if (!parsed.success) {
-      return { succes: false, erreur: parsed.error.issues[0]?.message ?? "Données invalides" };
-    }
-
-    const { paiement } = await enregistrerPaiement({
-      ...parsed.data,
-      encaisseParId: ctx.utilisateurId,
-      etablissementId: ctx.etablissementId,
-    });
-
-    // Reçu par email au parent principal (RM-14 : non bloquant)
-    try {
-      const frais = await prisma.fraisEleve.findUnique({
-        where: { id: parsed.data.fraisEleveId },
-        include: {
-          inscription: {
-            include: {
-              eleve: {
-                include: {
-                  parents: { where: { principal: true }, include: { parent: true } },
-                },
-              },
-            },
-          },
-        },
-      });
-      const parent = frais?.inscription.eleve.parents[0]?.parent;
-      const etab = await prisma.etablissement.findUnique({ where: { id: ctx.etablissementId } });
-      if (parent?.email && frais) {
-        await envoyerRecuPaiement({
-          email: parent.email,
-          prenomParent: parent.prenom,
-          prenomEleve: frais.inscription.eleve.prenom,
-          nomEleve: frais.inscription.eleve.nom,
-          numeroRecu: paiement.numeroRecu,
-          montant: Number(paiement.montant),
-          devise: etab?.devise ?? "GNF",
-          etablissementId: ctx.etablissementId,
-        });
-      }
-    } catch {
-      /* email best-effort */
-    }
-
-    revalidatePath("/portail/paiements");
-    revalidatePath("/portail/recus");
-    return { succes: true, data: { numeroRecu: paiement.numeroRecu, paiementId: paiement.id } };
-  } catch (e) {
-    return { succes: false, erreur: msg(e) };
-  }
+  return encaisserDepuisFormulaire(formData);
 }
 
 export async function actionAnnulerPaiement(

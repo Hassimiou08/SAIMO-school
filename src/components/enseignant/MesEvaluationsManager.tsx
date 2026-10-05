@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Plus, PencilLine, Lock, Loader2 } from "lucide-react";
 import { Modale, Champ, Selecteur, Err, ModalActions } from "@/components/portal/_ui";
-import { actionCreerEvaluation } from "@/server/actions/evaluations";
+import { useExecuterOperation } from "@/lib/offline/client";
+import { versEntrees } from "@/lib/offline/operations";
 import type { MonEvaluation } from "@/server/dal/enseignant";
 
 interface Opt {
@@ -27,6 +28,7 @@ export function MesEvaluationsManager({
   types: { id: string; nom: string; noteMaximale: number }[];
 }) {
   const router = useRouter();
+  const executer = useExecuterOperation();
   const [modal, setModal] = useState(false);
   const [erreur, setErreur] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -34,10 +36,17 @@ export function MesEvaluationsManager({
   const creer = (fd: FormData) => {
     setErreur("");
     startTransition(async () => {
-      const r = await actionCreerEvaluation(fd);
+      const r = await executer<"evaluation.creer", { id: string }>(
+        "evaluation.creer",
+        { form: versEntrees(fd) },
+        `Nouvelle évaluation — ${fd.get("titre") || "sans titre"}`,
+      );
       if (!r.succes) {
         setErreur(r.erreur);
         toast.error(r.erreur);
+      } else if (r.enAttente) {
+        setModal(false);
+        toast.info("Évaluation enregistrée sur cet appareil : elle sera créée au retour de la connexion, puis vous pourrez saisir les notes.");
       } else {
         setModal(false);
         toast.success("Évaluation créée — saisissez les notes.");

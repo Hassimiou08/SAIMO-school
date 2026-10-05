@@ -7,7 +7,8 @@ import { useRouter } from "next/navigation";
 import { Search, Plus, CheckCircle2, AlertCircle } from "lucide-react";
 import type { AbsenceDTO, StatsAbsences } from "@/server/dal/absences";
 import type { ClasseOption, EleveClasseOption } from "@/server/dal/pedagogie";
-import { actionEnregistrerAbsence, actionJustifierAbsence } from "@/server/actions/absences";
+import { useExecuterOperation } from "@/lib/offline/client";
+import { versEntrees } from "@/lib/offline/operations";
 import { Modale, Selecteur, Champ, Err, ModalActions } from "@/components/portal/_ui";
 
 export function AbsencesManager({
@@ -24,6 +25,7 @@ export function AbsencesManager({
   peutJustifier?: boolean;
 }) {
   const router = useRouter();
+  const executer = useExecuterOperation();
   const [isPending, startTransition] = useTransition();
   const [query, setQuery] = useState("");
   const [modal, setModal] = useState(false);
@@ -38,18 +40,27 @@ export function AbsencesManager({
 
   const enregistrer = (fd: FormData) => {
     setErreur("");
+    const eleve = eleves.find((e) => e.id === fd.get("eleveId"))?.nom ?? "élève";
+    const statut = fd.get("statut") === "retard" ? "Retard" : "Absence";
     startTransition(async () => {
-      const r = await actionEnregistrerAbsence(fd);
+      const r = await executer("absence.enregistrer", { form: versEntrees(fd) }, `${statut} — ${eleve} (${fd.get("date")})`);
       if (!r.succes) { setErreur(r.erreur); toast.error(r.erreur); }
+      else if (r.enAttente) { setModal(false); toast.info("Absence enregistrée sur cet appareil : elle sera envoyée au retour de la connexion."); }
       else { setModal(false); toast.success("Absence enregistrée."); router.refresh(); }
     });
   };
   const justifier = (id: string) => {
     const motif = prompt("Motif de la justification :") ?? "";
     if (!motif) return;
+    const absence = absences.find((a) => a.id === id);
     startTransition(async () => {
-      const r = await actionJustifierAbsence(id, motif);
+      const r = await executer(
+        "absence.justifier",
+        { presenceId: id, motif },
+        `Justification — ${absence?.eleve ?? "absence"} (${absence?.date ?? ""})`,
+      );
       if (!r.succes) toast.error(r.erreur);
+      else if (r.enAttente) toast.info("Justification enregistrée sur cet appareil : elle sera envoyée au retour de la connexion.");
       else { toast.success("Absence justifiée."); router.refresh(); }
     });
   };
