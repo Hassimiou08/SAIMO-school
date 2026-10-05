@@ -2,8 +2,11 @@ import "server-only";
 
 import { prisma } from "@/lib/prisma";
 import { requireContext } from "@/server/context";
+import { peutFaire } from "@/server/permissions/roles";
 
 export interface StatsDashboard {
+  /** false pour les rôles sans accès à la finance : montants à 0, à masquer. */
+  voitFinance: boolean;
   elevesActifs: number;
   enseignantsActifs: number;
   classes: number;
@@ -16,7 +19,8 @@ export interface StatsDashboard {
 }
 
 export async function getStatsDashboard(): Promise<StatsDashboard> {
-  const { etablissementId, anneeScolaireId } = await requireContext();
+  const { etablissementId, anneeScolaireId, role } = await requireContext();
+  const voitFinance = peutFaire(role, "paiement:view");
 
   const [
     elevesActifs,
@@ -43,17 +47,21 @@ export async function getStatsDashboard(): Promise<StatsDashboard> {
       where: { classe: { etablissementId, anneeScolaireId } },
       _count: { _all: true },
     }),
-    prisma.fraisEleve.aggregate({
-      where: { inscription: { etablissementId, anneeScolaireId } },
-      _sum: { montantDu: true, montantPaye: true },
-    }),
-    prisma.paiement.aggregate({
-      where: {
-        statut: "valide",
-        fraisEleve: { inscription: { etablissementId, anneeScolaireId } },
-      },
-      _sum: { montant: true },
-    }),
+    voitFinance
+      ? prisma.fraisEleve.aggregate({
+          where: { inscription: { etablissementId, anneeScolaireId } },
+          _sum: { montantDu: true, montantPaye: true },
+        })
+      : null,
+    voitFinance
+      ? prisma.paiement.aggregate({
+          where: {
+            statut: "valide",
+            fraisEleve: { inscription: { etablissementId, anneeScolaireId } },
+          },
+          _sum: { montant: true },
+        })
+      : null,
     prisma.evaluation.count({
       where: {
         etablissementId,
@@ -70,18 +78,19 @@ export async function getStatsDashboard(): Promise<StatsDashboard> {
     ? Math.round((presents / totalPresences) * 100)
     : 100;
 
-  const du = Number(fraisAgg._sum.montantDu ?? 0);
-  const paye = Number(fraisAgg._sum.montantPaye ?? 0);
+  const du = Number(fraisAgg?._sum.montantDu ?? 0);
+  const paye = Number(fraisAgg?._sum.montantPaye ?? 0);
   const tauxRecouvrement = du ? Math.round((paye / du) * 100) : 0;
 
   return {
+    voitFinance,
     elevesActifs,
     enseignantsActifs,
     classes,
     bulletinsGeneres,
     tauxPresence,
     tauxRecouvrement,
-    recettesTotales: Number(paiementsAgg._sum.montant ?? 0),
+    recettesTotales: Number(paiementsAgg?._sum.montant ?? 0),
     montantImpayes: Math.max(0, du - paye),
     evaluationsEnAttente,
   };

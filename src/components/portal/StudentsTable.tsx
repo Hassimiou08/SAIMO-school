@@ -17,9 +17,11 @@ type SortDirection = "asc" | "desc";
 export function StudentsTable({
   eleves,
   total,
+  voitFinance,
 }: {
   eleves: EleveListDTO[];
   total: number;
+  voitFinance: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -150,9 +152,11 @@ export function StudentsTable({
               <th className="px-5 py-3.5 font-semibold cursor-pointer group hover:text-neutral-700 transition" onClick={() => handleSort("moyenne")}>
                 <div className="flex items-center gap-1">Moyenne <SortIcon col="moyenne" /></div>
               </th>
-              <th className="px-5 py-3.5 font-semibold cursor-pointer group hover:text-neutral-700 transition" onClick={() => handleSort("solde")}>
-                <div className="flex items-center gap-1">Solde dû <SortIcon col="solde" /></div>
-              </th>
+              {voitFinance && (
+                <th className="px-5 py-3.5 font-semibold cursor-pointer group hover:text-neutral-700 transition" onClick={() => handleSort("solde")}>
+                  <div className="flex items-center gap-1">Solde dû <SortIcon col="solde" /></div>
+                </th>
+              )}
               <th className="px-5 py-3.5 font-semibold text-right">Actions</th>
             </tr>
           </thead>
@@ -190,13 +194,15 @@ export function StudentsTable({
                     )}
                   </span>
                 </td>
-                <td className="px-5 py-3.5 text-sm">
-                  {s.soldeDu > 0 ? (
-                    <span className="font-semibold text-orange-500">{new Intl.NumberFormat("fr-FR").format(s.soldeDu)} <span className="text-[10px] text-orange-400">GNF</span></span>
-                  ) : (
-                    <span className="rounded-full bg-green-100 px-2.5 py-1 text-[11px] font-semibold text-green-600">À jour</span>
-                  )}
-                </td>
+                {voitFinance && (
+                  <td className="px-5 py-3.5 text-sm">
+                    {s.soldeDu > 0 ? (
+                      <span className="font-semibold text-orange-500">{new Intl.NumberFormat("fr-FR").format(s.soldeDu)} <span className="text-[10px] text-orange-400">GNF</span></span>
+                    ) : (
+                      <span className="rounded-full bg-green-100 px-2.5 py-1 text-[11px] font-semibold text-green-600">À jour</span>
+                    )}
+                  </td>
+                )}
                 <td className="px-5 py-3.5">
                   <div className="relative flex items-center justify-end gap-2" ref={openMenuId === s.id ? menuRef : undefined}>
                     <button
@@ -243,7 +249,7 @@ export function StudentsTable({
 
             {filteredAndSorted.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-5 py-10 text-center text-sm text-neutral-500">Aucun élève ne correspond à ces critères.</td>
+                <td colSpan={voitFinance ? 7 : 6} className="px-5 py-10 text-center text-sm text-neutral-500">Aucun élève ne correspond à ces critères.</td>
               </tr>
             )}
           </tbody>

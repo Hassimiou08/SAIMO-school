@@ -7,6 +7,7 @@ import { requireContext, requirePermission } from "@/server/context";
 import { trouverEleves, trouverEleveParId } from "@/server/repositories/eleve.repo";
 import { trouverPaiementsEleve } from "@/server/repositories/paiement.repo";
 import { formatDateLongue } from "@/lib/format";
+import { peutFaire } from "@/server/permissions/roles";
 
 // ─────────────────────────────────────────────────────────────
 // DTO
@@ -28,6 +29,8 @@ export interface EleveListResult {
   total: number;
   page: number;
   pages: number;
+  /** false : rôle sans accès à la finance (soldes à 0, à masquer). */
+  voitFinance: boolean;
 }
 
 export interface EleveDetailDTO {
@@ -38,6 +41,8 @@ export interface EleveDetailDTO {
   classe: string;
   classeId: string | null;
   statut: "Actif" | "Inactif";
+  /** false : rôle sans accès à la finance (solde à 0, paiements vides). */
+  voitFinance: boolean;
   soldeDu: number;
   dateNaissance: string; // formatée FR pour l'affichage
   dateNaissanceISO: string | null; // yyyy-mm-dd pour les formulaires
@@ -109,6 +114,7 @@ export async function listerElevesDTO(params: {
 }): Promise<EleveListResult> {
   const ctx = await requireContext();
   requirePermission(ctx.role, "eleve:view");
+  const voitFinance = peutFaire(ctx.role, "paiement:view");
 
   const res = await trouverEleves({
     etablissementId: ctx.etablissementId,
@@ -127,7 +133,7 @@ export async function listerElevesDTO(params: {
   }
 
   const [soldes, bulletins] = await Promise.all([
-    inscriptionParEleve.size
+    voitFinance && inscriptionParEleve.size
       ? prisma.fraisEleve.groupBy({
           by: ["inscriptionId"],
           where: { inscriptionId: { in: [...inscriptionParEleve.keys()] } },
@@ -174,7 +180,7 @@ export async function listerElevesDTO(params: {
     soldeDu: soldeParEleve.get(e.id) ?? 0,
   }));
 
-  return { eleves, total: res.total, page: res.page, pages: res.pages };
+  return { eleves, total: res.total, page: res.page, pages: res.pages, voitFinance };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -185,6 +191,7 @@ export const getEleveDetailDTO = cache(
   async (id: string): Promise<EleveDetailDTO> => {
     const ctx = await requireContext();
     requirePermission(ctx.role, "eleve:view");
+    const voitFinance = peutFaire(ctx.role, "paiement:view");
 
     const eleve = await trouverEleveParId(id, ctx.etablissementId);
     if (!eleve) notFound();
@@ -212,7 +219,7 @@ export const getEleveDetailDTO = cache(
         include: { seance: { include: { matiere: true } } },
         orderBy: { createdAt: "desc" },
       }),
-      trouverPaiementsEleve(id, ctx.etablissementId),
+      voitFinance ? trouverPaiementsEleve(id, ctx.etablissementId) : [],
       prisma.documentEleve.findMany({ where: { eleveId: id } }),
     ]);
 
@@ -245,7 +252,7 @@ export const getEleveDetailDTO = cache(
 
     const parent = eleve.parents[0]?.parent;
     const insc = eleve.inscriptions[0];
-    const soldeDu = await soldeEleve(id, ctx.etablissementId);
+    const soldeDu = voitFinance ? await soldeEleve(id, ctx.etablissementId) : 0;
 
     return {
       id: eleve.id,
@@ -255,6 +262,7 @@ export const getEleveDetailDTO = cache(
       classe: insc?.classe?.nom ?? "—",
       classeId: insc?.classeId ?? null,
       statut: statutLisible(eleve.statut),
+      voitFinance,
       soldeDu,
       dateNaissance: formatDateLongue(eleve.dateNaissance),
       dateNaissanceISO: eleve.dateNaissance

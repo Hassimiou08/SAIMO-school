@@ -1,36 +1,45 @@
-import { Users, BookOpen, Wallet2, GraduationCap, ClipboardCheck, BarChart3, ArrowRight, UserPlus } from "lucide-react";
+import { Users, BookOpen, Wallet2, GraduationCap, ClipboardCheck, BarChart3, ArrowRight, UserPlus, type LucideIcon } from "lucide-react";
+import type { RoleUtilisateur } from "@prisma/client";
+import { peutFaire, type Permission } from "@/server/permissions/roles";
 import Link from "next/link";
 import { formatGNF } from "@/lib/format";
 import type { StatsDashboard } from "@/server/dal/dashboard";
 
-const quickActions = [
-  { icon: Users, label: "Gérer les Élèves", href: "/portail/eleves", color: "from-blue-500 to-blue-600", desc: "Inscriptions, fiches, classes" },
-  { icon: GraduationCap, label: "Enseignants", href: "/portail/enseignants", color: "from-blue-400 to-blue-500", desc: "Corps enseignant & affectations" },
-  { icon: ClipboardCheck, label: "Notes & Évaluations", href: "/portail/notes", color: "from-orange-400 to-orange-500", desc: "Saisie et validation des notes" },
-  { icon: Wallet2, label: "Paiements", href: "/portail/paiements", color: "from-orange-500 to-orange-600", desc: "Scolarité, reçus, suivi" },
-  { icon: BookOpen, label: "Bulletins", href: "/portail/bulletins", color: "from-blue-500 to-blue-600", desc: "Génération et impression" },
-  { icon: BarChart3, label: "Rapports", href: "/portail/rapports", color: "from-orange-400 to-orange-500", desc: "Statistiques et analyses" },
+const quickActions: { icon: LucideIcon; label: string; href: string; perm: Permission; color: string; desc: string }[] = [
+  { icon: Users, label: "Gérer les Élèves", href: "/portail/eleves", perm: "eleve:view", color: "from-blue-500 to-blue-600", desc: "Inscriptions, fiches, classes" },
+  { icon: GraduationCap, label: "Enseignants", href: "/portail/enseignants", perm: "enseignant:view", color: "from-blue-400 to-blue-500", desc: "Corps enseignant & affectations" },
+  { icon: ClipboardCheck, label: "Notes & Évaluations", href: "/portail/notes", perm: "classe:view", color: "from-orange-400 to-orange-500", desc: "Saisie et validation des notes" },
+  { icon: Wallet2, label: "Paiements", href: "/portail/paiements", perm: "paiement:view", color: "from-orange-500 to-orange-600", desc: "Scolarité, reçus, suivi" },
+  { icon: BookOpen, label: "Bulletins", href: "/portail/bulletins", perm: "bulletin:view", color: "from-blue-500 to-blue-600", desc: "Génération et impression" },
+  { icon: BarChart3, label: "Rapports", href: "/portail/rapports", perm: "rapport:view", color: "from-orange-400 to-orange-500", desc: "Statistiques et analyses" },
 ];
 
-export function AdminDashboard({ stats }: { stats: StatsDashboard }) {
+export function AdminDashboard({ stats, role }: { stats: StatsDashboard; role: RoleUtilisateur }) {
+  const peut = (p: Permission) => peutFaire(role, p);
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap gap-3">
-        <Link href="/portail/eleves/nouveau" className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-md hover:bg-blue-700 transition">
-          <UserPlus className="h-4 w-4" /> Inscrire un élève
-        </Link>
-        <Link href="/portail/enseignants/nouveau" className="inline-flex items-center gap-2 rounded-full bg-orange-500 px-5 py-2.5 text-sm font-bold text-white shadow-md hover:bg-orange-600 transition">
-          <GraduationCap className="h-4 w-4" /> Recruter un enseignant
-        </Link>
-        <Link href="/portail/preinscriptions" className="inline-flex items-center gap-2 rounded-full border border-neutral-300 px-5 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition">
-          Demandes de pré-inscription
-        </Link>
+        {peut("eleve:create") && (
+          <Link href="/portail/eleves/nouveau" className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-md hover:bg-blue-700 transition">
+            <UserPlus className="h-4 w-4" /> Inscrire un élève
+          </Link>
+        )}
+        {peut("enseignant:manage") && (
+          <Link href="/portail/enseignants/nouveau" className="inline-flex items-center gap-2 rounded-full bg-orange-500 px-5 py-2.5 text-sm font-bold text-white shadow-md hover:bg-orange-600 transition">
+            <GraduationCap className="h-4 w-4" /> Recruter un enseignant
+          </Link>
+        )}
+        {peut("inscription:view") && (
+          <Link href="/portail/preinscriptions" className="inline-flex items-center gap-2 rounded-full border border-neutral-300 px-5 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition">
+            Demandes de pré-inscription
+          </Link>
+        )}
       </div>
 
       <div>
         <h2 className="font-display text-lg font-bold text-neutral-900 mb-4">Accès rapides</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {quickActions.map((action) => (
+          {quickActions.filter((a) => peut(a.perm)).map((action) => (
             <Link
               key={action.label}
               href={action.href}
@@ -49,6 +58,7 @@ export function AdminDashboard({ stats }: { stats: StatsDashboard }) {
         </div>
       </div>
 
+      {stats.voitFinance && (
       <div className="rounded-2xl bg-gradient-to-r from-blue-500 to-orange-400 p-6 text-white overflow-hidden relative">
         <div className="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PHBhdGggZD0iTTQwIDQwVjBIMHY0MHoiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNMzkgNDBWMGgxdjQwek0wIDM5aDQwdjFIMHoiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMSkiLz48L3N2Zz4=')]" />
         <div className="relative flex flex-wrap items-center justify-between gap-4">
@@ -64,6 +74,7 @@ export function AdminDashboard({ stats }: { stats: StatsDashboard }) {
           </Link>
         </div>
       </div>
+      )}
     </div>
   );
 }

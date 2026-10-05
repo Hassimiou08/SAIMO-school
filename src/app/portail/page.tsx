@@ -61,7 +61,7 @@ export default async function PortailPage() {
           </div>
 
           <div className="mt-8">
-            <AdminDashboard stats={stats} />
+            <AdminDashboard stats={stats} role={user.role} />
           </div>
         </main>
       </div>

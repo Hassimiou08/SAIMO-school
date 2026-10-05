@@ -15,10 +15,9 @@ export default async function FinaliserInscriptionPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [eleve, frais] = await Promise.all([
-    getEleveDetailDTO(id),
-    listerFraisEleve(id),
-  ]);
+  const eleve = await getEleveDetailDTO(id);
+  // Proviseur, censeur… : l'encaissement est laissé à la comptabilité.
+  const frais = eleve.voitFinance ? await listerFraisEleve(id) : null;
 
   return (
     <div className="min-h-screen bg-paper-100">
@@ -39,7 +38,22 @@ export default async function FinaliserInscriptionPage({
 
           <FilParcours etapes={ETAPES_INSCRIPTION} courant={2} />
 
-          <EncaissementInscription eleveId={id} matricule={eleve.matricule} frais={frais} />
+          {frais ? (
+            <EncaissementInscription eleveId={id} matricule={eleve.matricule} frais={frais} />
+          ) : (
+            <div className="rounded-2xl border border-neutral-200 bg-white p-6 text-sm text-ink-500">
+              <p className="font-semibold text-navy-900">Inscription enregistrée.</p>
+              <p className="mt-1">
+                L&rsquo;encaissement des frais sera effectué par la comptabilité.
+              </p>
+              <Link
+                href={`/portail/eleves/${id}`}
+                className="mt-4 inline-flex items-center gap-1.5 font-semibold text-blue-600 hover:text-blue-700"
+              >
+                Voir la fiche de l&rsquo;élève
+              </Link>
+            </div>
+          )}
         </main>
       </div>
     </div>

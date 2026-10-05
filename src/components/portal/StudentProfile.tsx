@@ -110,16 +110,18 @@ export function StudentProfile({ student }: { student: Student }) {
               {student.absences.length}
             </p>
           </div>
-          <div>
-            <p className="text-[11px] uppercase tracking-wide text-ink-500">Solde dû</p>
-            <p
-              className={`mt-1 font-mono text-lg font-medium ${
-                student.soldeDu > 0 ? "text-gold-500" : "text-navy-900"
-              }`}
-            >
-              {student.soldeDu > 0 ? formatGNF(student.soldeDu) : "À jour"}
-            </p>
-          </div>
+          {student.voitFinance && (
+            <div>
+              <p className="text-[11px] uppercase tracking-wide text-ink-500">Solde dû</p>
+              <p
+                className={`mt-1 font-mono text-lg font-medium ${
+                  student.soldeDu > 0 ? "text-gold-500" : "text-navy-900"
+                }`}
+              >
+                {student.soldeDu > 0 ? formatGNF(student.soldeDu) : "À jour"}
+              </p>
+            </div>
+          )}
           <div>
             <p className="text-[11px] uppercase tracking-wide text-ink-500">Inscrit depuis</p>
             <p className="mt-1 text-sm font-medium text-navy-900">{student.dateInscription}</p>
@@ -129,7 +131,7 @@ export function StudentProfile({ student }: { student: Student }) {
 
       {/* Onglets */}
       <div className="profile-tabbar mt-6 flex gap-1 rounded-full border border-navy-900/5 bg-white p-1 sm:w-fit">
-        {tabs.map((t) => (
+        {tabs.filter((t) => t !== "Paiements" || student.voitFinance).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -149,7 +151,7 @@ export function StudentProfile({ student }: { student: Student }) {
         {tab === "Informations" && <InformationsPanel student={student} />}
         {tab === "Résultats" && <ResultatsPanel student={student} />}
         {tab === "Absences" && <AbsencesPanel student={student} />}
-        {tab === "Paiements" && <PaiementsPanel student={student} />}
+        {tab === "Paiements" && student.voitFinance && <PaiementsPanel student={student} />}
       </div>
     </div>
   );

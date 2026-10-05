@@ -3,7 +3,10 @@ import type { RoleUtilisateur } from "@prisma/client";
 const ROLE_LABELS: Record<RoleUtilisateur, string> = {
   SUPER_ADMIN_SAIMO: "Super Admin",
   ADMIN_ETABLISSEMENT: "Administrateur",
+  FONDATEUR: "Fondateur",
   DIRECTEUR: "Direction",
+  PROVISEUR: "Proviseur",
+  CENSEUR: "Censeur",
   SECRETAIRE: "Secrétariat",
   COMPTABLE: "Comptabilité",
   ENSEIGNANT: "Enseignant",

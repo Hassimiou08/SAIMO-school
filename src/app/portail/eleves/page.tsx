@@ -17,7 +17,7 @@ export default async function ElevesPage({
   searchParams: Promise<{ page?: string; q?: string; classe?: string }>;
 }) {
   const sp = await searchParams;
-  const { eleves, total } = await listerElevesDTO({
+  const { eleves, total, voitFinance } = await listerElevesDTO({
     page: sp.page ? Number(sp.page) : 1,
     recherche: sp.q,
     classeId: sp.classe,
@@ -47,7 +47,7 @@ export default async function ElevesPage({
             </Link>
           </div>
 
-          <StudentsTable eleves={eleves} total={total} />
+          <StudentsTable eleves={eleves} total={total} voitFinance={voitFinance} />
         </main>
       </div>
     </div>

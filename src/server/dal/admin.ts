@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { requireContext, requirePermission, getSession } from "@/server/context";
 import { formatDateCourte, formatDateLongue } from "@/lib/format";
 import { libelleRole } from "@/lib/roles-labels";
+import { peutFaire } from "@/server/permissions/roles";
 
 // ─── Annonces ───────────────────────────────────────────────
 
@@ -200,7 +201,7 @@ export async function listerDemandesIA() {
     take: 50,
   });
 
-  const peutValider = role === "ADMIN_ETABLISSEMENT" || role === "DIRECTEUR";
+  const peutValider = peutFaire(role, "ia:valider");
 
   return {
     peutValider,

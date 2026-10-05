@@ -9,13 +9,17 @@ import {
   Wallet2, Receipt, Tag,
   Megaphone, Sparkles,
   BarChart3, ShieldAlert, UserCog,
-  Settings, MessageSquare, UserPlus, UserCircle2
+  Settings, MessageSquare, UserPlus, UserCircle2,
+  type LucideIcon,
 } from "lucide-react";
+import { peutFaire, type Permission } from "@/server/permissions/roles";
 import { LogoMark } from "@/components/Logo";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { useCurrentUserOptional } from "@/components/providers/UserProvider";
 
-const NAV_SECTIONS = [
+type NavItem = { icon: LucideIcon; label: string; href: string; perm?: Permission };
+
+const NAV_SECTIONS: { label: string | null; items: NavItem[] }[] = [
   {
     label: null,
     items: [
@@ -25,48 +29,48 @@ const NAV_SECTIONS = [
   {
     label: "Académique",
     items: [
-      { icon: Users2,       label: "Élèves",          href: "/portail/eleves" },
-      { icon: UserPlus,     label: "Pré-inscriptions", href: "/portail/preinscriptions" },
-      { icon: GraduationCap,label: "Enseignants",      href: "/portail/enseignants" },
-      { icon: School,       label: "Classes",          href: "/portail/classes" },
-      { icon: BookMarked,   label: "Matières",         href: "/portail/matieres" },
-      { icon: Layers,       label: "Cycles & Niveaux", href: "/portail/cycles" },
-      { icon: CalendarRange,label: "Emploi du Temps",  href: "/portail/emploi-du-temps" },
-      { icon: UserCheck,    label: "Affectations",     href: "/portail/affectations" },
+      { icon: Users2,       label: "Élèves",          href: "/portail/eleves", perm: "eleve:view" },
+      { icon: UserPlus,     label: "Pré-inscriptions", href: "/portail/preinscriptions", perm: "inscription:view" },
+      { icon: GraduationCap,label: "Enseignants",      href: "/portail/enseignants", perm: "enseignant:view" },
+      { icon: School,       label: "Classes",          href: "/portail/classes", perm: "classe:view" },
+      { icon: BookMarked,   label: "Matières",         href: "/portail/matieres", perm: "classe:view" },
+      { icon: Layers,       label: "Cycles & Niveaux", href: "/portail/cycles", perm: "classe:view" },
+      { icon: CalendarRange,label: "Emploi du Temps",  href: "/portail/emploi-du-temps", perm: "classe:view" },
+      { icon: UserCheck,    label: "Affectations",     href: "/portail/affectations", perm: "enseignant:view" },
     ],
   },
   {
     label: "Évaluation",
     items: [
-      { icon: ClipboardCheck, label: "Notes",     href: "/portail/notes" },
-      { icon: Table2,         label: "Tableau général", href: "/portail/notes/tableau" },
-      { icon: CalendarX2,     label: "Absences",  href: "/portail/absences" },
-      { icon: FileBadge2,     label: "Bulletins", href: "/portail/bulletins" },
+      { icon: ClipboardCheck, label: "Notes",     href: "/portail/notes", perm: "classe:view" },
+      { icon: Table2,         label: "Tableau général", href: "/portail/notes/tableau", perm: "classe:view" },
+      { icon: CalendarX2,     label: "Absences",  href: "/portail/absences", perm: "presence:view" },
+      { icon: FileBadge2,     label: "Bulletins", href: "/portail/bulletins", perm: "bulletin:view" },
     ],
   },
   {
     label: "Finance",
     items: [
-      { icon: Wallet2,  label: "Paiements",         href: "/portail/paiements" },
-      { icon: CalendarRange, label: "Échéances & Frais", href: "/portail/echeances" },
-      { icon: Receipt,  label: "Reçus",             href: "/portail/recus" },
-      { icon: Tag,      label: "Remises & Bourses",  href: "/portail/remises" },
+      { icon: Wallet2,  label: "Paiements",         href: "/portail/paiements", perm: "paiement:view" },
+      { icon: CalendarRange, label: "Échéances & Frais", href: "/portail/echeances", perm: "paiement:view" },
+      { icon: Receipt,  label: "Reçus",             href: "/portail/recus", perm: "recu:generer" },
+      { icon: Tag,      label: "Remises & Bourses",  href: "/portail/remises", perm: "paiement:view" },
     ],
   },
   {
     label: "Communication",
     items: [
       { icon: MessageSquare, label: "Messagerie", href: "/portail/messagerie" },
-      { icon: Megaphone, label: "Annonces",     href: "/portail/annonces" },
-      { icon: Sparkles,  label: "Assistant IA", href: "/portail/ia" },
+      { icon: Megaphone, label: "Annonces",     href: "/portail/annonces", perm: "annonce:view" },
+      { icon: Sparkles,  label: "Assistant IA", href: "/portail/ia", perm: "ia:utiliser" },
     ],
   },
   {
     label: "Administration",
     items: [
-      { icon: BarChart3,  label: "Rapports",         href: "/portail/rapports" },
-      { icon: UserCog,    label: "Utilisateurs",      href: "/portail/utilisateurs" },
-      { icon: ShieldAlert,label: "Journal d'Audit",   href: "/portail/audit" },
+      { icon: BarChart3,  label: "Rapports",         href: "/portail/rapports", perm: "rapport:view" },
+      { icon: UserCog,    label: "Utilisateurs",      href: "/portail/utilisateurs", perm: "utilisateur:view" },
+      { icon: ShieldAlert,label: "Journal d'Audit",   href: "/portail/audit", perm: "audit:view" },
     ],
   },
 ];
@@ -77,6 +81,15 @@ export function Sidebar() {
   const theme = user?.theme;
   const nomEtab = user?.etablissementNom;
   const logo = user?.etablissementLogo;
+
+  // Chaque lien n'apparaît que si le rôle a la permission correspondante
+  // (ex. : le proviseur et le censeur ne voient pas la section Finance).
+  const role = user?.role;
+  const autorise = (perm?: Permission) => !perm || (!!role && peutFaire(role, perm));
+  const sections = NAV_SECTIONS
+    .map((s) => ({ ...s, items: s.items.filter((i) => autorise(i.perm)) }))
+    .filter((s) => s.items.length > 0);
+  const voitParametres = autorise("parametres:manage");
 
   const isActive = (href: string) =>
     href !== "#" && (pathname === href || (href !== "/portail" && pathname.startsWith(href)));
@@ -108,7 +121,7 @@ export function Sidebar() {
 
         {/* Navigation scrollable */}
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1 scrollbar-thin">
-          {NAV_SECTIONS.map((section, si) => (
+          {sections.map((section, si) => (
             <div key={si} className={si > 0 ? "pt-2" : ""}>
               {section.label && (
                 <p className="mb-1 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-white/40">
@@ -132,7 +145,7 @@ export function Sidebar() {
                   </Link>
                 );
               })}
-              {si < NAV_SECTIONS.length - 1 && (
+              {si < sections.length - 1 && (
                 <div className="mt-2 mx-3 border-b border-white/10" />
               )}
             </div>
@@ -152,17 +165,19 @@ export function Sidebar() {
             <UserCircle2 className="h-[18px] w-[18px]" />
             Mon profil
           </Link>
-          <Link
-            href="/portail/parametres"
-            className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors ${
-              pathname === "/portail/parametres"
-                ? "bg-white/20 text-white shadow-md"
-                : "text-white/70 hover:bg-white/15 hover:text-white"
-            }`}
-          >
-            <Settings className="h-[18px] w-[18px]" />
-            Paramètres
-          </Link>
+          {voitParametres && (
+            <Link
+              href="/portail/parametres"
+              className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors ${
+                pathname === "/portail/parametres"
+                  ? "bg-white/20 text-white shadow-md"
+                  : "text-white/70 hover:bg-white/15 hover:text-white"
+              }`}
+            >
+              <Settings className="h-[18px] w-[18px]" />
+              Paramètres
+            </Link>
+          )}
           <LogoutButton className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white/70 transition-colors hover:bg-red-500/20 hover:text-red-200" />
         </div>
       </div>

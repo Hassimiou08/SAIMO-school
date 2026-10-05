@@ -78,7 +78,8 @@ export async function actionBasculerAnnonce(id: string): Promise<ActionResult> {
 // ─── Utilisateurs (staff) ──────────────────────────────────
 
 const ROLES_STAFF: RoleUtilisateur[] = [
-  "ADMIN_ETABLISSEMENT", "DIRECTEUR", "SECRETAIRE", "COMPTABLE", "ENSEIGNANT", "PROF_PRINCIPAL",
+  "ADMIN_ETABLISSEMENT", "FONDATEUR", "DIRECTEUR", "PROVISEUR", "CENSEUR",
+  "SECRETAIRE", "COMPTABLE", "ENSEIGNANT", "PROF_PRINCIPAL",
 ];
 
 const schemaUser = z.object({

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
-import { Users2, GraduationCap, CalendarCheck2, Wallet2 } from "lucide-react";
+import { Users2, GraduationCap, CalendarCheck2, Wallet2, School } from "lucide-react";
 import type { StatsDashboard } from "@/server/dal/dashboard";
 
 export function StatCards({ stats }: { stats: StatsDashboard }) {
@@ -10,7 +10,9 @@ export function StatCards({ stats }: { stats: StatsDashboard }) {
     { icon: Users2, label: "Élèves actifs", value: stats.elevesActifs, suffix: "", iconBg: "bg-blue-500" },
     { icon: GraduationCap, label: "Enseignants", value: stats.enseignantsActifs, suffix: "", iconBg: "bg-orange-500" },
     { icon: CalendarCheck2, label: "Taux de présence", value: stats.tauxPresence, suffix: "%", iconBg: "bg-blue-400" },
-    { icon: Wallet2, label: "Recouvrement", value: stats.tauxRecouvrement, suffix: "%", iconBg: "bg-orange-400" },
+    stats.voitFinance
+      ? { icon: Wallet2, label: "Recouvrement", value: stats.tauxRecouvrement, suffix: "%", iconBg: "bg-orange-400" }
+      : { icon: School, label: "Classes", value: stats.classes, suffix: "", iconBg: "bg-orange-400" },
   ];
 
   const numberRefs = useRef<(HTMLSpanElement | null)[]>([]);

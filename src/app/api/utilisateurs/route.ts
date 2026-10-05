@@ -35,7 +35,7 @@ import bcrypt from "bcryptjs";
  *                 type: string
  *               role:
  *                 type: string
- *                 enum: [ADMIN_ETABLISSEMENT, DIRECTEUR, SECRETAIRE, COMPTABLE, ENSEIGNANT]
+ *                 enum: [ADMIN_ETABLISSEMENT, FONDATEUR, DIRECTEUR, PROVISEUR, CENSEUR, SECRETAIRE, COMPTABLE, ENSEIGNANT]
  *     responses:
  *       201:
  *         description: Utilisateur créé avec succès

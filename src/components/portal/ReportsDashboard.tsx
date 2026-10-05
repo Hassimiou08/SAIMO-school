@@ -17,17 +17,17 @@ export function ReportsDashboard({
 }: {
   stats: StatsDashboard;
   moyennes: { classes: MoyenneClasse[]; moyenneGenerale: number | null };
-  caisse: RapportCaisseDTO;
+  caisse: RapportCaisseDTO | null; // null : rôle sans accès à la finance
   absences: StatsAbsences;
   periode: string;
 }) {
   const kpis = [
     { icon: Users2, label: "Élèves actifs", value: String(stats.elevesActifs) },
     { icon: GraduationCap, label: "Enseignants", value: String(stats.enseignantsActifs) },
-    { icon: TrendingUp, label: "Recouvrement", value: `${stats.tauxRecouvrement}%` },
+    ...(stats.voitFinance ? [{ icon: TrendingUp, label: "Recouvrement", value: `${stats.tauxRecouvrement}%` }] : []),
     { icon: CalendarX2, label: "Absences (non just.)", value: String(absences.nonJustifiees) },
     { icon: FileBadge2, label: "Bulletins générés", value: String(stats.bulletinsGeneres) },
-    { icon: Wallet2, label: "Recettes année", value: formatGNF(stats.recettesTotales) },
+    ...(stats.voitFinance ? [{ icon: Wallet2, label: "Recettes année", value: formatGNF(stats.recettesTotales) }] : []),
   ];
 
   const maxMoy = 20;
@@ -64,6 +64,7 @@ export function ReportsDashboard({
           </div>
         </div>
 
+        {caisse && (
         <div className="rounded-2xl border border-neutral-200 bg-white p-6">
           <h3 className="font-display text-sm font-bold text-navy-900">Caisse — {periode}</h3>
           <p className="mt-2 font-display text-2xl font-black text-green-600">{formatGNF(caisse.total)}</p>
@@ -78,8 +79,10 @@ export function ReportsDashboard({
             {caisse.parMode.length === 0 && <p className="text-sm text-neutral-400">Aucun encaissement sur la période.</p>}
           </div>
         </div>
+        )}
       </div>
 
+      {caisse && (
       <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden">
         <div className="border-b border-neutral-100 p-4 text-sm font-semibold text-neutral-700">Derniers encaissements</div>
         <table className="w-full text-left text-sm">
@@ -98,6 +101,7 @@ export function ReportsDashboard({
           </tbody>
         </table>
       </div>
+      )}
     </div>
   );
 }

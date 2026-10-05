@@ -11,11 +11,14 @@ import { Modale, Champ, Selecteur, Err, ModalActions } from "@/components/portal
 
 const ROLES = [
   { v: "DIRECTEUR", l: "Direction" },
+  { v: "PROVISEUR", l: "Proviseur" },
+  { v: "CENSEUR", l: "Censeur" },
   { v: "SECRETAIRE", l: "Secrétariat" },
   { v: "COMPTABLE", l: "Comptabilité" },
   { v: "ENSEIGNANT", l: "Enseignant" },
   { v: "PROF_PRINCIPAL", l: "Professeur principal" },
   { v: "ADMIN_ETABLISSEMENT", l: "Administrateur" },
+  { v: "FONDATEUR", l: "Fondateur" },
 ];
 
 export function UtilisateursManager({ utilisateurs }: { utilisateurs: UtilisateurDTO[] }) {

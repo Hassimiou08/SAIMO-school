@@ -5,6 +5,8 @@ import { ReportsDashboard } from "@/components/portal/ReportsDashboard";
 import { getStatsDashboard, getMoyennesParClasse } from "@/server/dal/dashboard";
 import { getRapportCaisse } from "@/server/dal/finance";
 import { getStatsAbsences } from "@/server/dal/absences";
+import { requireContext } from "@/server/context";
+import { peutFaire } from "@/server/permissions/roles";
 
 export const metadata: Metadata = {
   title: "Rapports — Portail SAIMO",
@@ -16,10 +18,13 @@ export default async function RapportsPage() {
   const debut = new Date();
   debut.setDate(debut.getDate() - 30);
 
+  const { role } = await requireContext();
+
   const [stats, moyennes, caisse, absences] = await Promise.all([
     getStatsDashboard(),
     getMoyennesParClasse(),
-    getRapportCaisse(debut, fin),
+    // Proviseur, censeur… : pas de rapport de caisse.
+    peutFaire(role, "rapport:financier") ? getRapportCaisse(debut, fin) : null,
     getStatsAbsences(),
   ]);
 

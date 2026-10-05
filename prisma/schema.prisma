@@ -148,7 +148,10 @@ model Parametre {
 enum RoleUtilisateur {
   SUPER_ADMIN_SAIMO
   ADMIN_ETABLISSEMENT
+  FONDATEUR // propriétaire de l'école : mêmes droits que l'administrateur
   DIRECTEUR
+  PROVISEUR // direction pédagogique, sans accès à la finance
+  CENSEUR // vie scolaire et suivi des études, sans accès à la finance
   SECRETAIRE
   COMPTABLE
   ENSEIGNANT
