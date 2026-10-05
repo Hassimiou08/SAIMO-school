@@ -6,7 +6,7 @@ import type { RoleUtilisateur } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { homeForRole } from "@/auth.config";
-import { peutFaire, type Permission } from "@/server/permissions/roles";
+import { peutFaire, estLectureSeule, type Permission } from "@/server/permissions/roles";
 import { NonAutorise } from "@/server/permissions/can";
 import { resolveTheme } from "@/lib/theme";
 
@@ -110,6 +110,11 @@ export const getCurrentUserView = cache(async () => {
 /** Lève NonAutorise si le rôle ne dispose pas de la permission. */
 export function requirePermission(role: RoleUtilisateur, permission: Permission): void {
   if (!peutFaire(role, permission)) {
+    if (estLectureSeule(role)) {
+      throw new NonAutorise(
+        "Votre compte est en lecture seule : vous pouvez consulter mais pas modifier.",
+      );
+    }
     throw new NonAutorise(
       `Le rôle ${role} ne dispose pas de la permission « ${permission} ».`,
     );

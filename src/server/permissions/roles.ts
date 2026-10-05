@@ -50,9 +50,12 @@ export type Permission =
   | "paiement:annuler"
   | "paiement:view"
   | "recu:generer"
+  | "recu:view"
   | "rapport:financier"
   | "depense:gerer"
+  | "depense:view"
   | "salaire:gerer"
+  | "salaire:view"
   // Rapports & Tableaux de bord
   | "rapport:view"
   | "rapport:export"
@@ -66,7 +69,19 @@ export type Permission =
   // Audit
   | "audit:view"
   // Paramètres
-  | "parametres:manage";
+  | "parametres:manage"
+  | "parametres:view";
+
+/**
+ * Droits de lecture accordés automatiquement par un droit d'écriture :
+ * qui peut gérer les dépenses peut aussi les consulter, etc.
+ */
+const LECTURE_INCLUSE: Partial<Record<Permission, Permission>> = {
+  "recu:view": "recu:generer",
+  "depense:view": "depense:gerer",
+  "salaire:view": "salaire:gerer",
+  "parametres:view": "parametres:manage",
+};
 
 // ─── Matrice des permissions par rôle ──────────────────────────
 
@@ -133,8 +148,27 @@ const permissionsParRole: Record<RoleUtilisateur, Permission[]> = {
 
   ADMIN_ETABLISSEMENT: PERMISSIONS_ADMIN,
 
-  // Le fondateur est le propriétaire de l'école : accès complet, comme l'admin.
-  FONDATEUR: PERMISSIONS_ADMIN,
+  // Le fondateur est le propriétaire de l'école : il voit tout (pédagogie,
+  // finance, audit, paramètres) mais ne modifie rien.
+  FONDATEUR: [
+    "utilisateur:view",
+    "eleve:view",
+    "inscription:view",
+    "classe:view",
+    "enseignant:view",
+    "bulletin:view",
+    "presence:view",
+    "paiement:view",
+    "recu:view",
+    "rapport:financier",
+    "depense:view",
+    "salaire:view",
+    "rapport:view",
+    "rapport:export",
+    "annonce:view",
+    "audit:view",
+    "parametres:view",
+  ],
 
   // Proviseur : toute la gestion pédagogique et administrative, mais aucune
   // donnée financière (paiements, frais, reçus, dépenses, salaires).
@@ -318,7 +352,16 @@ export function peutFaire(
   role: RoleUtilisateur,
   permission: Permission
 ): boolean {
-  return permissionsParRole[role]?.includes(permission) ?? false;
+  const perms = permissionsParRole[role];
+  if (!perms) return false;
+  if (perms.includes(permission)) return true;
+  const ecriture = LECTURE_INCLUSE[permission];
+  return !!ecriture && perms.includes(ecriture);
+}
+
+/** Rôle en lecture seule : il consulte tout mais ne modifie rien. */
+export function estLectureSeule(role: RoleUtilisateur): boolean {
+  return role === "FONDATEUR";
 }
 
 /**

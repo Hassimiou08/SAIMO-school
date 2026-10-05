@@ -306,7 +306,7 @@ export async function listerDepenses(params: {
   statut?: string;
 } = {}): Promise<DepenseRow[]> {
   const { etablissementId, role } = await requireContext();
-  requirePermission(role, "depense:gerer");
+  requirePermission(role, "depense:view");
 
   const depenses = await prisma.depense.findMany({
     where: {
@@ -374,7 +374,7 @@ export async function listerSalaires(params: {
   q?: string;
 } = {}): Promise<ListeSalaires> {
   const { etablissementId, role } = await requireContext();
-  requirePermission(role, "salaire:gerer");
+  requirePermission(role, "salaire:view");
 
   const tousMois = await prisma.salaire.findMany({
     where: { etablissementId },

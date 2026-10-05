@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   LayoutDashboard, ArrowDownRight, ArrowUpRight,
   Calculator, FileBarChart, Wallet, ChevronRight,
-  Megaphone, MessageSquare
+  Megaphone, MessageSquare, ArrowLeft
 } from "lucide-react";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import {
@@ -63,6 +63,15 @@ export function ComptaSidebar() {
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto px-3 py-5 space-y-1">
           <p className="px-3 text-[9px] uppercase tracking-widest text-blue-200/40 font-bold mb-3">Navigation</p>
+          {user && user.role !== "COMPTABLE" && (
+            <Link
+              href="/portail"
+              className="mb-3 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-blue-100/70 transition-all duration-150 hover:bg-white/10 hover:text-white"
+            >
+              <ArrowLeft className="h-4 w-4 flex-shrink-0 text-blue-200/50" />
+              <span className="flex-1 truncate">Retour au portail</span>
+            </Link>
+          )}
           {NAV.map(item => {
             const active = isActive(item.href);
             return (

@@ -139,7 +139,7 @@ export async function listerAudit(params: { q?: string; entite?: string }): Prom
 
 export async function getParametresEtablissement() {
   const { etablissementId, role } = await requireContext();
-  requirePermission(role, "parametres:manage");
+  requirePermission(role, "parametres:view");
 
   const [etab, annees, params] = await Promise.all([
     prisma.etablissement.findUnique({ where: { id: etablissementId } }),

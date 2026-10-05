@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Search, ChevronDown, Menu } from "lucide-react";
+import { Search, ChevronDown, Menu, Eye } from "lucide-react";
+import { estLectureSeule } from "@/server/permissions/roles";
 import {
   useCurrentUserOptional,
   libelleRole,
@@ -27,6 +28,13 @@ export function Topbar() {
         <span className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
         Année 2025/2026
       </div>
+
+      {user && estLectureSeule(user.role) && (
+        <div className="ml-2 hidden items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 sm:flex">
+          <Eye className="h-3.5 w-3.5" />
+          Lecture seule
+        </div>
+      )}
 
       {/* Barre de recherche */}
       <div className="relative hidden max-w-xs flex-1 mx-6 sm:block">

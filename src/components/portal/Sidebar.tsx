@@ -10,7 +10,7 @@ import {
   Megaphone, Sparkles,
   BarChart3, ShieldAlert, UserCog,
   Settings, MessageSquare, UserPlus, UserCircle2,
-  type LucideIcon,
+  Landmark, type LucideIcon,
 } from "lucide-react";
 import { peutFaire, type Permission } from "@/server/permissions/roles";
 import { LogoMark } from "@/components/Logo";
@@ -53,8 +53,9 @@ const NAV_SECTIONS: { label: string | null; items: NavItem[] }[] = [
     items: [
       { icon: Wallet2,  label: "Paiements",         href: "/portail/paiements", perm: "paiement:view" },
       { icon: CalendarRange, label: "Échéances & Frais", href: "/portail/echeances", perm: "paiement:view" },
-      { icon: Receipt,  label: "Reçus",             href: "/portail/recus", perm: "recu:generer" },
+      { icon: Receipt,  label: "Reçus",             href: "/portail/recus", perm: "recu:view" },
       { icon: Tag,      label: "Remises & Bourses",  href: "/portail/remises", perm: "paiement:view" },
+      { icon: Landmark, label: "Comptabilité",       href: "/compta", perm: "rapport:financier" },
     ],
   },
   {
@@ -89,7 +90,7 @@ export function Sidebar() {
   const sections = NAV_SECTIONS
     .map((s) => ({ ...s, items: s.items.filter((i) => autorise(i.perm)) }))
     .filter((s) => s.items.length > 0);
-  const voitParametres = autorise("parametres:manage");
+  const voitParametres = autorise("parametres:view");
 
   const isActive = (href: string) =>
     href !== "#" && (pathname === href || (href !== "/portail" && pathname.startsWith(href)));

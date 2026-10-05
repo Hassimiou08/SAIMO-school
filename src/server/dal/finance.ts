@@ -175,7 +175,7 @@ const MODE_LISIBLE: Record<string, string> = {
 /** Détail d'un reçu (clé = id du paiement), pour affichage / impression / PDF. */
 export const getRecuDetail = cache(async (paiementId: string): Promise<RecuDetail> => {
   const { etablissementId, role } = await requireContext();
-  requirePermission(role, "recu:generer");
+  requirePermission(role, "recu:view");
 
   const p = await prisma.paiement.findFirst({
     where: {
@@ -256,7 +256,7 @@ export interface RecuRowDTO {
 
 export async function listerRecus(q?: string): Promise<RecuRowDTO[]> {
   const { etablissementId, anneeScolaireId, role } = await requireContext();
-  requirePermission(role, "recu:generer");
+  requirePermission(role, "recu:view");
 
   const paiements = await prisma.paiement.findMany({
     where: {

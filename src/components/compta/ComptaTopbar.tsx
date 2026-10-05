@@ -6,11 +6,14 @@ import {
   libelleRole,
   initiales,
 } from "@/components/providers/UserProvider";
+import { estLectureSeule } from "@/server/permissions/roles";
 
 export function ComptaTopbar() {
   const user = useCurrentUserOptional();
   const nom = user?.name ?? "Utilisateur";
-  const roleLabel = user ? libelleRole(user.role) : "Comptabilité";
+  const roleLabel = user
+    ? libelleRole(user.role) + (estLectureSeule(user.role) ? " · lecture seule" : "")
+    : "Comptabilité";
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-neutral-200 bg-white/80 px-6 backdrop-blur-md lg:pl-10">
