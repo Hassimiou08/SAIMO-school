@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
 import { toast } from "sonner";
 import { Search, CheckCircle, AlertTriangle, Wallet2 } from "lucide-react";
 import type { FraisRowDTO } from "@/server/dal/finance";

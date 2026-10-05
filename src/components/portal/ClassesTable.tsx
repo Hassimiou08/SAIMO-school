@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
 import { Search, ChevronDown, MoreHorizontal, Pencil, Users, Plus, X, Loader2 } from "lucide-react";
 import type { ClasseDTO } from "@/server/dal/pedagogie";
 import type { NiveauOption } from "@/server/dal/pedagogie";

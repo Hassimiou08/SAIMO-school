@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
 import Link from "next/link";
 import { ArrowLeft, UserPlus, Save, Loader2, ChevronRight, ChevronLeft, Info, AlertTriangle } from "lucide-react";
 import type { ClasseOptionDTO } from "@/server/dal/classes";

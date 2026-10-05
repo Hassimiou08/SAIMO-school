@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
 import { toast } from "sonner";
 import { Plus, Search, CheckCircle, XCircle } from "lucide-react";
 import type { RecetteRow } from "@/server/dal/compta";

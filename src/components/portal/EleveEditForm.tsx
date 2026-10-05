@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect } from "react";
 import { useFormStatus } from "react-dom";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
 import Link from "next/link";
 import { Save, Loader2 } from "lucide-react";
 import type { EleveDetailDTO } from "@/server/dal/eleves";

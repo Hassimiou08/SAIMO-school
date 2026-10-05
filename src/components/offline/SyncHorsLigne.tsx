@@ -120,6 +120,27 @@ export function SyncHorsLigne() {
     })();
   }, [utilisateurId, recharger, lancerSynchro, preparer]);
 
+  // Hors connexion, la navigation interne de Next.js (chargement de la page
+  // par le réseau) échoue et finit sur la page d'erreur. On la remplace par
+  // un chargement complet : le service worker sert alors la page enregistrée.
+  useEffect(() => {
+    const surClic = (e: MouseEvent) => {
+      if (navigator.onLine || e.defaultPrevented || e.button !== 0) return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const lien = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
+      if (!lien || lien.target === "_blank" || lien.hasAttribute("download")) return;
+      const url = new URL(lien.href, window.location.href);
+      if (url.origin !== window.location.origin) return;
+      if (url.pathname === window.location.pathname && url.search === window.location.search) return;
+      e.preventDefault();
+      e.stopPropagation();
+      window.location.assign(url.toString());
+    };
+    // Phase de capture sur window : avant que Next.js ne traite le clic.
+    window.addEventListener("click", surClic, true);
+    return () => window.removeEventListener("click", surClic, true);
+  }, []);
+
   // Réseau, file d'attente, service worker.
   useEffect(() => {
     if (!utilisateurId) return;

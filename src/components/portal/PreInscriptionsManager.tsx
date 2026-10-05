@@ -3,7 +3,7 @@
 import { toast } from "sonner";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
 import { Phone, Mail, Check, X, UserPlus, CheckCircle2, AlertTriangle } from "lucide-react";
 import type { PreInscriptionDTO, StatsPreInscriptions } from "@/server/dal/preinscriptions";
 import type { ClasseOption } from "@/server/dal/pedagogie";

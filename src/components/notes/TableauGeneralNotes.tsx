@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
 import type { TableauGeneralDTO } from "@/server/dal/notes-tableau";
 
 interface Opt {

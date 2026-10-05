@@ -3,7 +3,7 @@
 import { toast } from "sonner";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
 import { Plus, ClipboardCheck, Lock, PencilLine } from "lucide-react";
 import type { EvaluationDTO } from "@/server/dal/evaluations";
 import type { PeriodeOption, TypeEvaluationOption } from "@/server/dal/evaluations";

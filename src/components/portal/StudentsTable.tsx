@@ -3,7 +3,7 @@
 import { toast } from "sonner";
 
 import { useMemo, useState, useEffect, useRef, useCallback, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
 import { gsap } from "gsap";
 import { Search, ChevronDown, ChevronUp, ArrowRight, MoreHorizontal, Pencil, Trash2, ShieldOff } from "lucide-react";
 import type { EleveListDTO } from "@/server/dal/eleves";

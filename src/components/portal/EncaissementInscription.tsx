@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
 import Link from "next/link";
 import { Wallet2, CheckCircle2, ChevronRight, Printer } from "lucide-react";
 import { useExecuterOperation } from "@/lib/offline/client";

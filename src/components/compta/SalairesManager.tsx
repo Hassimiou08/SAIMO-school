@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
 import { toast } from "sonner";
 import { Plus, Search, CheckCircle, Clock, Sparkles, Pencil } from "lucide-react";
 import type { ListeSalaires, SalaireRow } from "@/server/dal/compta";

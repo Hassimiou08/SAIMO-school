@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
 import Link from "next/link";
 import { toast } from "sonner";
 import { FileText, Sparkles, CheckCircle, Send, Loader2, Lock, AlertTriangle, ArrowRight, Printer } from "lucide-react";

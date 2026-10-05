@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
 import Link from "next/link";
 import { Search, MessageSquare, Plus, Send, Loader2 } from "lucide-react";
 import type { ConversationApercu } from "@/server/dal/admin";

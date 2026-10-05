@@ -3,7 +3,7 @@
 import { toast } from "sonner";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
 import Link from "next/link";
 import { Users, User, CalendarRange, Trash2, Plus, X, Loader2, Pencil } from "lucide-react";
 import type { ClasseDetailDTO, NiveauOption } from "@/server/dal/pedagogie";

@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
 import Link from "next/link";
 import { ArrowLeft, GraduationCap, Save, Loader2, CheckCircle2 } from "lucide-react";
 import { actionCreerEnseignant } from "@/server/actions/pedagogie";

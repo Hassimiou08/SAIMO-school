@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { CloudOff, RotateCcw } from "lucide-react";
 
 /** true quand le navigateur n'a pas de connexion (évalué après le montage). */
@@ -31,17 +30,22 @@ export function ErreurHorsLigne({ reset, accueil }: { reset: () => void; accueil
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 text-amber-600">
           <CloudOff className="h-6 w-6" />
         </div>
-        <h2 className="mt-4 font-display text-lg font-bold text-navy-900">Connexion requise</h2>
+        <h2 className="mt-4 font-display text-lg font-bold text-navy-900">Vous êtes hors connexion</h2>
         <p className="mt-2 text-sm text-ink-500">
-          Cette action n&rsquo;est pas disponible hors connexion. Les notes, absences, encaissements,
-          inscriptions et dépenses peuvent être saisis hors ligne : ils seront envoyés au retour de la connexion.
+          Cette page ou cette action a besoin du réseau. Vous pouvez afficher la version enregistrée
+          sur cet appareil. Les notes, absences, encaissements, inscriptions et dépenses peuvent être
+          saisis hors ligne : ils seront envoyés au retour de la connexion.
         </p>
-        <div className="mt-6 flex justify-center gap-3">
-          <Link href={accueil} className="rounded-full border border-neutral-300 px-5 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50">
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          {/* Chargement complet : le service worker sert la page enregistrée. */}
+          <a href={accueil} className="rounded-full border border-neutral-300 px-5 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50">
             Accueil
-          </Link>
-          <button onClick={reset} className="inline-flex items-center gap-2 rounded-full bg-navy-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-600">
-            <RotateCcw className="h-4 w-4" /> Réessayer
+          </a>
+          <button
+            onClick={() => (navigator.onLine ? reset() : window.location.reload())}
+            className="inline-flex items-center gap-2 rounded-full bg-navy-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-600"
+          >
+            <RotateCcw className="h-4 w-4" /> Afficher la version enregistrée
           </button>
         </div>
       </div>
