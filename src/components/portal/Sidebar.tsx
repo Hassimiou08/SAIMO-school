@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   LayoutDashboard, Users2, GraduationCap, School, BookMarked,
   Layers, CalendarRange, UserCheck,
-  ClipboardCheck, CalendarX2, FileBadge2,
+  ClipboardCheck, CalendarX2, FileBadge2, Table2,
   Wallet2, Receipt, Tag,
   Megaphone, Sparkles,
   BarChart3, ShieldAlert, UserCog,
@@ -39,6 +39,7 @@ const NAV_SECTIONS = [
     label: "Évaluation",
     items: [
       { icon: ClipboardCheck, label: "Notes",     href: "/portail/notes" },
+      { icon: Table2,         label: "Tableau général", href: "/portail/notes/tableau" },
       { icon: CalendarX2,     label: "Absences",  href: "/portail/absences" },
       { icon: FileBadge2,     label: "Bulletins", href: "/portail/bulletins" },
     ],

@@ -114,6 +114,8 @@ export interface NoteMatiereParent {
   coefficient: number;
   notes: number[];
   moyenne: number | null;
+  /** true tant qu'aucune composition n'est encore verrouillée pour cette matière. */
+  provisoire: boolean;
   appreciation: string | null;
 }
 export interface NotesEnfant {
@@ -146,13 +148,18 @@ export const getNotesEnfant = cache(async (eleveId: string): Promise<NotesEnfant
       },
     },
     include: {
-      evaluation: { include: { matiere: { include: { niveaux: true } } } },
+      evaluation: { include: { matiere: { include: { niveaux: true } }, typeEvaluation: true } },
     },
   });
 
+  // Pondération devoirs/composition — cf. calculerDetailParMatiere (notes.service.ts).
   const parMat = new Map<
     string,
-    { matiere: string; coef: number; somme: number; nb: number; valeurs: number[] }
+    {
+      matiere: string; coef: number; valeurs: number[];
+      devoirsSomme: number; devoirsNb: number;
+      composSomme: number; composNb: number;
+    }
   >();
   for (const n of notes) {
     if (n.valeur == null || n.absent || n.dispense) continue;
@@ -163,24 +170,37 @@ export const getNotesEnfant = cache(async (eleveId: string): Promise<NotesEnfant
     const cur = parMat.get(key) ?? {
       matiere: n.evaluation.matiere.nom,
       coef,
-      somme: 0,
-      nb: 0,
       valeurs: [],
+      devoirsSomme: 0, devoirsNb: 0, composSomme: 0, composNb: 0,
     };
-    cur.somme += sur20;
-    cur.nb += 1;
     cur.valeurs.push(sur20);
+    if (n.evaluation.typeEvaluation.nom === "Composition") {
+      cur.composSomme += sur20;
+      cur.composNb += 1;
+    } else {
+      cur.devoirsSomme += sur20;
+      cur.devoirsNb += 1;
+    }
     parMat.set(key, cur);
   }
 
   const matieres: NoteMatiereParent[] = [...parMat.values()]
-    .map((m) => ({
-      matiere: m.matiere,
-      coefficient: m.coef,
-      notes: m.valeurs,
-      moyenne: m.nb ? Math.round((m.somme / m.nb) * 100) / 100 : null,
-      appreciation: null,
-    }))
+    .map((m) => {
+      const moyenneDevoirs = m.devoirsNb ? m.devoirsSomme / m.devoirsNb : null;
+      const moyenneComposition = m.composNb ? m.composSomme / m.composNb : null;
+      const moyenne =
+        moyenneDevoirs !== null && moyenneComposition !== null
+          ? (moyenneDevoirs * 2 + moyenneComposition) / 3
+          : (moyenneDevoirs ?? moyenneComposition);
+      return {
+        matiere: m.matiere,
+        coefficient: m.coef,
+        notes: m.valeurs,
+        moyenne: moyenne !== null ? Math.round(moyenne * 100) / 100 : null,
+        provisoire: moyenneComposition === null,
+        appreciation: null,
+      };
+    })
     .sort((a, b) => a.matiere.localeCompare(b.matiere));
 
   const totalCoef = matieres.reduce((s, m) => s + m.coefficient, 0);

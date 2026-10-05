@@ -4,7 +4,7 @@
  */
 
 const XAI_BASE_URL = process.env.XAI_BASE_URL ?? "https://api.groq.com/openai/v1";
-const XAI_MODEL = process.env.XAI_MODEL ?? "groq/compound-mini";
+const XAI_MODEL = process.env.XAI_MODEL ?? "openai/gpt-oss-120b";
 
 export type TypeActionIA =
   | "redaction_annonce"

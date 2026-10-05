@@ -57,7 +57,14 @@ export default async function NotesParentPage({
               const bar = moy >= 14 ? "bg-emerald-500" : moy >= 10 ? "bg-blue-500" : "bg-red-400";
               return (
                 <tr key={n.matiere} className="transition hover:bg-neutral-50">
-                  <td className="px-6 py-4 text-sm font-semibold text-neutral-900">{n.matiere}</td>
+                  <td className="px-6 py-4 text-sm font-semibold text-neutral-900">
+                    {n.matiere}
+                    {n.provisoire && (
+                      <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+                        provisoire
+                      </span>
+                    )}
+                  </td>
                   <td className="px-6 py-4 text-center">
                     <span className="rounded-lg bg-neutral-100 px-2 py-1 text-xs font-bold text-neutral-600">
                       {n.coefficient}

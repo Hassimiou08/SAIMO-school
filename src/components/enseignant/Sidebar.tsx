@@ -8,6 +8,7 @@ import {
   CalendarX2,
   CalendarRange,
   FileBadge2,
+  Table2,
   Megaphone,
   MessageSquare,
   Sparkles,
@@ -20,6 +21,7 @@ import { useCurrentUserOptional } from "@/components/providers/UserProvider";
 const NAV = [
   { icon: LayoutDashboard, label: "Tableau de bord", href: "/enseignant" },
   { icon: ClipboardCheck, label: "Mes notes", href: "/enseignant/notes" },
+  { icon: Table2, label: "Tableau général", href: "/enseignant/notes/tableau" },
   { icon: CalendarX2, label: "Absences", href: "/enseignant/absences" },
   { icon: CalendarRange, label: "Emploi du temps", href: "/enseignant/emploi-du-temps" },
   { icon: FileBadge2, label: "Bulletins", href: "/enseignant/bulletins" },

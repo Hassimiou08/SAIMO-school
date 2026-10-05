@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireContext } from "@/server/context";
 import { formatDateLongue } from "@/lib/format";
+import { getTableauGeneralClasse } from "@/server/dal/notes-tableau";
 
 // ─── Contexte enseignant ────────────────────────────────────
 
@@ -289,6 +290,21 @@ export async function bulletinEstDeMaClassePP(bulletinId: string): Promise<boole
     select: { classeId: true },
   });
   return !!b && ppIds.includes(b.classeId);
+}
+
+// ─── Tableau général des notes (classes où je suis professeur principal) ───
+
+/**
+ * Tableau général élève × matière pour une classe dont je suis professeur
+ * principal. Lève une erreur si la classe demandée ne m'appartient pas —
+ * on ne retombe jamais silencieusement sur une autre classe.
+ */
+export async function getMonTableauGeneral(classeId: string, periodeId: string) {
+  const ppIds = await mesClasseIdsPP();
+  if (!ppIds.includes(classeId)) {
+    throw new Error("Vous n'êtes professeur principal d'aucune classe correspondante.");
+  }
+  return getTableauGeneralClasse(classeId, periodeId);
 }
 
 // ─── Contexte IA restreint à l'enseignant ─────────────────────────
