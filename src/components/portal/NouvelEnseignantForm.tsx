@@ -3,10 +3,9 @@
 import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { useRouter } from "@/lib/offline/router";
+import { executerAction, type ResultatAction } from "@/lib/offline/client";
 import Link from "next/link";
 import { ArrowLeft, GraduationCap, Save, Loader2, CheckCircle2 } from "lucide-react";
-import { actionCreerEnseignant } from "@/server/actions/pedagogie";
-import type { ActionResult } from "@/server/actions/eleves";
 
 const champ =
   "w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition";
@@ -23,14 +22,17 @@ function SubmitButton() {
 export function NouvelEnseignantForm() {
   const router = useRouter();
   const [state, formAction] = useActionState<
-    ActionResult<{ id: string; motDePasse: string }> | null,
+    ResultatAction<{ id: string; motDePasse: string }> | null,
     FormData
-  >(async (_p, fd) => actionCreerEnseignant(fd), null);
+  >(async (_p, fd) => executerAction("pedagogie.creerEnseignant", [fd]), null);
   const [done, setDone] = useState<{ id: string; mdp: string } | null>(null);
 
   useEffect(() => {
-    if (state?.succes) setDone({ id: state.data.id, mdp: state.data.motDePasse });
-  }, [state]);
+    if (!state?.succes) return;
+    // Hors ligne, le compte sera créé à la synchronisation : retour à la liste.
+    if (state.enAttente) router.push("/portail/enseignants");
+    else setDone({ id: state.data.id, mdp: state.data.motDePasse });
+  }, [state, router]);
 
   if (done) {
     return (

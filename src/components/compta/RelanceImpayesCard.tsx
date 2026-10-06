@@ -1,9 +1,10 @@
 "use client";
 
+import { executerAction } from "@/lib/offline/client";
+
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Send, Megaphone } from "lucide-react";
-import { actionRelancerImpayes } from "@/server/actions/compta";
 import { formatGNF } from "@/lib/format";
 
 export function RelanceImpayesCard({
@@ -20,11 +21,12 @@ export function RelanceImpayesCard({
     startTransition(async () => {
       const fd = new FormData();
       if (message.trim()) fd.set("message", message.trim());
-      const r = await actionRelancerImpayes(fd);
+      const r = await executerAction("compta.relancerImpayes", [fd]);
       if (!r.succes) {
         toast.error(r.erreur);
         return;
       }
+      if (r.enAttente) return; // les relances partiront à la synchronisation
       const { envoyes, sansEmail } = r.data;
       toast.success(
         `${envoyes} relance(s) envoyée(s)` +

@@ -32,9 +32,9 @@ export function ErreurHorsLigne({ reset, accueil }: { reset: () => void; accueil
         </div>
         <h2 className="mt-4 font-display text-lg font-bold text-navy-900">Vous êtes hors connexion</h2>
         <p className="mt-2 text-sm text-ink-500">
-          Cette page ou cette action a besoin du réseau. Vous pouvez afficher la version enregistrée
-          sur cet appareil. Les notes, absences, encaissements, inscriptions et dépenses peuvent être
-          saisis hors ligne : ils seront envoyés au retour de la connexion.
+          Cette page ou cette action a besoin du réseau (assistant IA, changement de mot de passe,
+          paiement en ligne…). Vous pouvez afficher la version enregistrée sur cet appareil. Les autres
+          saisies restent possibles hors ligne : elles seront envoyées au retour de la connexion.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           {/* Chargement complet : le service worker sert la page enregistrée. */}

@@ -3,10 +3,10 @@
 import { toast } from "sonner";
 
 import { useState, useTransition, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
+import { executerAction } from "@/lib/offline/client";
 import Link from "next/link";
 import { ArrowLeft, Send, Loader2 } from "lucide-react";
-import { actionEnvoyerMessage } from "@/server/actions/admin";
 
 export function MessageThread({
   conversation,
@@ -35,7 +35,7 @@ export function MessageThread({
     const contenu = texte;
     setTexte("");
     startTransition(async () => {
-      const r = await actionEnvoyerMessage(conversation.id, contenu);
+      const r = await executerAction("admin.envoyerMessage", [conversation.id, contenu]);
       if (!r.succes) toast.error(r.erreur);
       else router.refresh();
     });

@@ -10,6 +10,15 @@
 // puis rejoué ne crée pas de doublon (ex. : double encaissement).
 
 import { useCallback } from "react";
+import { toast } from "sonner";
+import type { ActionResult } from "@/server/actions/eleves";
+import { versEntrees } from "./operations";
+import {
+  LIBELLES_ACTIONS,
+  type ActionsHorsLigne,
+  type ArgSerialise,
+  type NomActionHorsLigne,
+} from "./actions-hors-ligne";
 import { useCurrentUserOptional } from "@/components/providers/UserProvider";
 import type { OperationEnvoyee, PayloadsOperation, ResultatOperation, TypeOperation } from "./operations";
 import {
@@ -119,6 +128,28 @@ export async function executerOperation<K extends TypeOperation, T = unknown>(
   }
 }
 
+// Lots limités en nombre et en taille (logos, signatures… en data URI) pour
+// rester sous la limite de taille des requêtes de l'hébergeur.
+const TAILLE_LOT_MAX_OCTETS = 2_500_000;
+
+function decouperEnLots(ops: OperationLocale[]): OperationLocale[][] {
+  const lots: OperationLocale[][] = [];
+  let lot: OperationLocale[] = [];
+  let taille = 0;
+  for (const op of ops) {
+    const t = JSON.stringify(op.payload).length;
+    if (lot.length && (lot.length >= TAILLE_LOT || taille + t > TAILLE_LOT_MAX_OCTETS)) {
+      lots.push(lot);
+      lot = [];
+      taille = 0;
+    }
+    lot.push(op);
+    taille += t;
+  }
+  if (lot.length) lots.push(lot);
+  return lots;
+}
+
 let synchroEnCours: Promise<EtatSynchro> | null = null;
 
 export type EtatSynchro = "ok" | "hors_ligne" | "session_expiree";
@@ -144,8 +175,7 @@ async function synchroniserMaintenant(utilisateurId: string): Promise<EtatSynchr
   let appliquees = 0;
   let erreurs = 0;
   try {
-    for (let i = 0; i < ops.length; i += TAILLE_LOT) {
-      const lot = ops.slice(i, i + TAILLE_LOT);
+    for (const lot of decouperEnLots(ops)) {
       const resultats = await envoyer(lot.map(versEnvoi));
       for (const op of lot) {
         const r = resultats.find((x) => x.id === op.id);
@@ -182,4 +212,76 @@ export function useExecuterOperation() {
     },
     [utilisateurId],
   );
+}
+
+// ─── Étape 2 : actions de la liste blanche ─────────────────────────────
+
+let utilisateurCourant: string | null = null;
+
+/** Appelé par SyncHorsLigne (présent dans tous les espaces connectés). */
+export function definirUtilisateurHorsLigne(id: string | null) {
+  utilisateurCourant = id;
+}
+
+type DonneesAction<K extends NomActionHorsLigne> = Extract<
+  Awaited<ReturnType<ActionsHorsLigne[K]>>,
+  { succes: true }
+>["data"];
+
+/**
+ * Résultat d'une action : celui de la Server Action, ou « en attente » quand
+ * elle a été gardée sur l'appareil (un message l'indique déjà à l'utilisateur).
+ */
+export type ResultatAction<T> =
+  | (ActionResult<T> & { enAttente?: false })
+  | { succes: true; enAttente: true; data?: undefined };
+
+function serialiser(a: unknown): ArgSerialise {
+  if (a instanceof FormData) return { t: "fd", v: versEntrees(a) };
+  if (a === undefined) return { t: "undef" };
+  return { t: "json", v: a };
+}
+
+function precisionAuto(args: unknown[]): string | undefined {
+  for (const a of args) {
+    if (!(a instanceof FormData)) continue;
+    for (const champ of ["nom", "titre", "libelle", "beneficiaire", "objet", "code"]) {
+      const v = a.get(champ);
+      if (typeof v === "string" && v.trim()) return v.trim().slice(0, 60);
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Appelle une Server Action de la liste blanche, avec ou sans connexion.
+ * À utiliser à la place de l'appel direct : `executerAction("pedagogie.creerMatiere", [fd])`.
+ */
+export async function executerAction<K extends NomActionHorsLigne>(
+  nom: K,
+  args: Parameters<ActionsHorsLigne[K]>,
+  precision?: string,
+): Promise<ResultatAction<DonneesAction<K>>> {
+  if (!utilisateurCourant) {
+    return { succes: false, erreur: "Utilisateur non identifié : rechargez la page." };
+  }
+  const detail = precision ?? precisionAuto(args);
+  const libelle = detail ? `${LIBELLES_ACTIONS[nom]} — ${detail}` : LIBELLES_ACTIONS[nom];
+  const r = await executerOperation<"action", DonneesAction<K>>(
+    utilisateurCourant,
+    "action",
+    { nom, args: args.map(serialiser) },
+    libelle,
+  );
+  if (!r.succes) return { succes: false, erreur: r.erreur };
+  if (r.enAttente) {
+    toast.info(`${libelle} : enregistré sur cet appareil, envoi au retour de la connexion.`);
+    return { succes: true, enAttente: true };
+  }
+  return { succes: true, data: r.data };
+}
+
+/** Message de succès, sauf si l'opération a été mise en attente (déjà signalé). */
+export function toastSucces(r: { enAttente?: boolean }, message: string) {
+  if (!r.enAttente) toast.success(message);
 }

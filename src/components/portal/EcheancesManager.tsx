@@ -3,15 +3,11 @@
 import { toast } from "sonner";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
+import { executerAction } from "@/lib/offline/client";
 import { Plus, Tag, CalendarClock, Users, Loader2 } from "lucide-react";
 import type { EcheanceRowDTO } from "@/server/dal/finance";
 import type { NiveauOption } from "@/server/dal/pedagogie";
-import {
-  actionCreerTypeFrais,
-  actionCreerEcheance,
-  actionGenererFrais,
-} from "@/server/actions/finance";
 import { Modale, Champ, Selecteur, Err, ModalActions } from "@/components/portal/_ui";
 import { formatGNF } from "@/lib/format";
 
@@ -39,12 +35,11 @@ export function EcheancesManager({
   };
   const generer = (id: string) =>
     startTransition(async () => {
-      const r = await actionGenererFrais(id);
-      if (r.succes) {
+      const r = await executerAction("finance.genererFrais", [id]);
+      if (!r.succes) toast.error(r.erreur);
+      else if (!r.enAttente) {
         toast.success(`${r.data.crees} frais générés.`);
         router.refresh();
-      } else {
-        toast.error(r.erreur);
       }
     });
 
@@ -92,7 +87,7 @@ export function EcheancesManager({
 
       {modal === "type" && (
         <Modale titre="Nouveau type de frais" onClose={() => setModal(null)}>
-          <form action={(fd) => run(() => actionCreerTypeFrais(fd))} className="space-y-4">
+          <form action={(fd) => run(() => executerAction("finance.creerTypeFrais", [fd]))} className="space-y-4">
             <Champ name="nom" label="Nom" placeholder="Ex : Cantine" required />
             <label className="flex items-center gap-2 text-sm text-neutral-700">
               <input type="checkbox" name="obligatoire" defaultChecked className="h-4 w-4" /> Obligatoire
@@ -105,7 +100,7 @@ export function EcheancesManager({
 
       {modal === "echeance" && (
         <Modale titre="Nouvelle échéance" onClose={() => setModal(null)}>
-          <form action={(fd) => run(() => actionCreerEcheance(fd))} className="space-y-4">
+          <form action={(fd) => run(() => executerAction("finance.creerEcheance", [fd]))} className="space-y-4">
             <Selecteur name="typeFraisId" label="Type de frais" required defaultValue="">
               <option value="" disabled>Choisir…</option>
               {typesFrais.map((t) => (<option key={t.id} value={t.id}>{t.nom}</option>))}

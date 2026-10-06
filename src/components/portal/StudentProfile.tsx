@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "@/lib/offline/router";
+import { executerAction } from "@/lib/offline/client";
 import { gsap } from "gsap";
 import { toast } from "sonner";
 import {
@@ -19,7 +20,6 @@ import {
 } from "lucide-react";
 import type { EleveDetailDTO as Student } from "@/server/dal/eleves";
 import { formatGNF } from "@/lib/format";
-import { actionCreerAccesParent } from "@/server/actions/parents";
 
 const tabs = ["Informations", "Résultats", "Absences", "Paiements"] as const;
 type Tab = (typeof tabs)[number];
@@ -164,9 +164,9 @@ function InformationsPanel({ student }: { student: Student }) {
   const creerAccesParent = () => {
     if (!student.parentId) return;
     startTransition(async () => {
-      const r = await actionCreerAccesParent(student.parentId!, student.id);
+      const r = await executerAction("parents.creerAcces", [student.parentId!, student.id]);
       if (!r.succes) toast.error(r.erreur);
-      else {
+      else if (!r.enAttente) {
         toast.success(`Accès parent créé pour ${r.data.email} — identifiants envoyés par e-mail.`);
         router.refresh();
       }

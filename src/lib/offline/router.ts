@@ -22,6 +22,10 @@ export function useRouter(): ReturnType<typeof useRouterNext> {
         if (navigator.onLine) router.replace(href, options);
         else window.location.replace(href);
       },
+      // Sans réseau, rien à recharger : on garde l'affichage actuel.
+      refresh: () => {
+        if (navigator.onLine) router.refresh();
+      },
     }),
     [router],
   );

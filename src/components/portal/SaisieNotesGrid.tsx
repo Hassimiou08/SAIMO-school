@@ -6,13 +6,9 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { ArrowLeft, Save, Lock, Unlock, Loader2, CheckCircle2 } from "lucide-react";
 import type { SaisieNoteLigne } from "@/server/dal/evaluations";
-import {
-  actionValiderEvaluation,
-  actionDeverrouillerEvaluation,
-} from "@/server/actions/evaluations";
 import { useCurrentUserOptional } from "@/components/providers/UserProvider";
 import {
-  useExecuterOperation, estHorsLigne, EVENEMENT_FILE, MESSAGE_CONNEXION_REQUISE,
+  useExecuterOperation, executerAction, toastSucces, EVENEMENT_FILE,
 } from "@/lib/offline/client";
 import { listerOperations, type OperationLocale } from "@/lib/offline/outbox";
 
@@ -121,24 +117,21 @@ export function SaisieNotesGrid({
   };
 
   const verrouiller = () => {
-    if (estHorsLigne()) { toast.error(MESSAGE_CONNEXION_REQUISE); return; }
-    if (nonSynchronise) { toast.error("Des notes de cette évaluation ne sont pas encore synchronisées."); return; }
     if (!confirm("Verrouiller ? Les notes ne seront plus modifiables.")) return;
     startTransition(async () => {
-      const r = await actionValiderEvaluation(evaluation.id);
+      const r = await executerAction("evaluations.valider", [evaluation.id]);
       if (!r.succes) { setMsg({ type: "err", texte: r.erreur }); toast.error(r.erreur); }
-      else { toast.success("Évaluation verrouillée."); router.push(retour); }
+      else { toastSucces(r, "Évaluation verrouillée."); router.push(retour); }
     });
   };
 
   const deverrouiller = () => {
-    if (estHorsLigne()) { toast.error(MESSAGE_CONNEXION_REQUISE); return; }
     if (!confirm("Déverrouiller cette évaluation pour corriger les notes ? Les bulletins générés devront être régénérés.")) return;
     setMsg(null);
     startTransition(async () => {
-      const r = await actionDeverrouillerEvaluation(evaluation.id);
+      const r = await executerAction("evaluations.deverrouiller", [evaluation.id]);
       if (!r.succes) { setMsg({ type: "err", texte: r.erreur }); toast.error(r.erreur); }
-      else { toast.success("Évaluation déverrouillée — vous pouvez corriger les notes."); router.refresh(); }
+      else { toastSucces(r, "Évaluation déverrouillée — vous pouvez corriger les notes."); router.refresh(); }
     });
   };
 

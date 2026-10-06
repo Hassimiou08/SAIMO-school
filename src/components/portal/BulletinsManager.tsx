@@ -2,18 +2,13 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "@/lib/offline/router";
+import { executerAction, toastSucces } from "@/lib/offline/client";
 import Link from "next/link";
 import { toast } from "sonner";
 import { FileText, Sparkles, CheckCircle, Send, Loader2, Lock, AlertTriangle, ArrowRight, Printer } from "lucide-react";
 import type { BulletinRowDTO, EtatPreparationBulletins } from "@/server/dal/bulletins";
 import type { ClasseOption } from "@/server/dal/pedagogie";
 import type { PeriodeOption } from "@/server/dal/evaluations";
-import {
-  actionGenererBulletins,
-  actionValiderBulletin,
-  actionPublierBulletin,
-  actionPublierBulletinsClasse,
-} from "@/server/actions/bulletins";
 
 export function BulletinsManager({
   bulletins,
@@ -52,8 +47,10 @@ export function BulletinsManager({
     }
     setMsg("");
     startTransition(async () => {
-      const r = await actionGenererBulletins(filtreClasse, filtrePeriode);
-      if (r.succes) {
+      const r = await executerAction("bulletins.generer", [filtreClasse, filtrePeriode]);
+      if (r.succes && r.enAttente) {
+        setMsg("Génération enregistrée sur cet appareil : elle sera faite au retour de la connexion.");
+      } else if (r.succes) {
         setMsg(`${r.data.nombre} bulletin(s) généré(s).`);
         toast.success(`${r.data.nombre} bulletin(s) généré(s).`);
         router.refresh();
@@ -65,8 +62,10 @@ export function BulletinsManager({
   };
   const publierTout = () => {
     startTransition(async () => {
-      const r = await actionPublierBulletinsClasse(filtreClasse, filtrePeriode);
-      if (r.succes) {
+      const r = await executerAction("bulletins.publierClasse", [filtreClasse, filtrePeriode]);
+      if (r.succes && r.enAttente) {
+        setMsg("Publication enregistrée sur cet appareil : elle sera faite au retour de la connexion.");
+      } else if (r.succes) {
         setMsg(`${r.data.nombre} bulletin(s) publié(s).`);
         toast.success(`${r.data.nombre} bulletin(s) publié(s).`);
         router.refresh();
@@ -78,15 +77,15 @@ export function BulletinsManager({
   };
   const valider = (id: string) =>
     startTransition(async () => {
-      const r = await actionValiderBulletin(id);
+      const r = await executerAction("bulletins.valider", [id]);
       if (!r.succes) { setMsg(r.erreur); toast.error(r.erreur); }
-      else { toast.success("Bulletin validé."); router.refresh(); }
+      else { toastSucces(r, "Bulletin validé."); router.refresh(); }
     });
   const publier = (id: string) =>
     startTransition(async () => {
-      const r = await actionPublierBulletin(id);
+      const r = await executerAction("bulletins.publier", [id]);
       if (!r.succes) { setMsg(r.erreur); toast.error(r.erreur); }
-      else { toast.success("Bulletin publié."); router.refresh(); }
+      else { toastSucces(r, "Bulletin publié."); router.refresh(); }
     });
 
   return (

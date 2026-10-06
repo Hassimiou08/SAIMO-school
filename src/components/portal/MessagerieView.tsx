@@ -2,10 +2,10 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "@/lib/offline/router";
+import { executerAction } from "@/lib/offline/client";
 import Link from "next/link";
 import { Search, MessageSquare, Plus, Send, Loader2 } from "lucide-react";
 import type { ConversationApercu } from "@/server/dal/admin";
-import { actionCreerConversation } from "@/server/actions/admin";
 import { Modale, Champ, Selecteur, Err, ModalActions } from "@/components/portal/_ui";
 import { initiales } from "@/lib/roles-labels";
 
@@ -32,8 +32,9 @@ export function MessagerieView({
   const creer = (fd: FormData) => {
     setErreur("");
     startTransition(async () => {
-      const r = await actionCreerConversation(fd);
+      const r = await executerAction("admin.creerConversation", [fd]);
       if (!r.succes) setErreur(r.erreur);
+      else if (r.enAttente) setModal(false);
       else { setModal(false); router.push(`${basePath}/${r.data.id}`); }
     });
   };

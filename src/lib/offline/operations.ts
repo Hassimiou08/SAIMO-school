@@ -2,6 +2,7 @@
 // d'attente) et le serveur (route /api/sync). Fichier sans dépendance serveur.
 
 import type { SaisieNote } from "@/server/services/notes.service";
+import type { ArgSerialise, NomActionHorsLigne } from "./actions-hors-ligne";
 
 /** Contenu d'un formulaire sérialisé (FormData → paires clé/valeur). */
 export type Entrees = [string, string][];
@@ -16,6 +17,8 @@ export interface PayloadsOperation {
   "eleve.modifier": { eleveId: string; form: Entrees };
   "depense.creer": { form: Entrees };
   "depense.payer": { depenseId: string; mode: string };
+  /** Étape 2 : toute action de la liste blanche (actions-hors-ligne.ts). */
+  action: { nom: NomActionHorsLigne; args: ArgSerialise[] };
 }
 
 export type TypeOperation = keyof PayloadsOperation;
@@ -30,6 +33,7 @@ export const TYPES_OPERATION: TypeOperation[] = [
   "eleve.modifier",
   "depense.creer",
   "depense.payer",
+  "action",
 ];
 
 /** Opération telle qu'envoyée au serveur. */

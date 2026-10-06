@@ -7,6 +7,7 @@ import { actionEnregistrerAbsence, actionJustifierAbsence } from "@/server/actio
 import { actionInscrireEleveComplet, actionModifierEleve } from "@/server/actions/eleves";
 import { actionCreerDepense, actionMarquerDepensePayee } from "@/server/actions/compta";
 import { encaisserDepuisFormulaire } from "@/server/services/encaissement.service";
+import { estActionHorsLigne, executerActionHorsLigne } from "@/server/sync/actions";
 import {
   versFormData,
   type PayloadsOperation,
@@ -42,6 +43,19 @@ const schemas: { [K in TypeOperation]: z.ZodType<PayloadsOperation[K]> } = {
   "eleve.modifier": z.object({ eleveId: id, form: entrees }),
   "depense.creer": z.object({ form: entrees }),
   "depense.payer": z.object({ depenseId: id, mode: z.string().max(30) }),
+  action: z.object({
+    nom: z.string().refine(estActionHorsLigne, "Action non disponible hors ligne"),
+    args: z
+      .array(
+        z.union([
+          // Les logos / photos / signatures voyagent en data URI : valeurs plus longues.
+          z.object({ t: z.literal("fd"), v: z.array(z.tuple([z.string().max(100), z.string().max(1_000_000)])).max(300) }),
+          z.object({ t: z.literal("json"), v: z.unknown() }),
+          z.object({ t: z.literal("undef") }),
+        ]),
+      )
+      .max(10),
+  }) as z.ZodType<PayloadsOperation["action"]>,
 };
 
 type Handler<K extends TypeOperation> = (
@@ -61,6 +75,7 @@ const handlers: { [K in TypeOperation]: Handler<K> } = {
   "eleve.modifier": (p) => actionModifierEleve(p.eleveId, versFormData(p.form)),
   "depense.creer": (p) => actionCreerDepense(versFormData(p.form)),
   "depense.payer": (p) => actionMarquerDepensePayee(p.depenseId, p.mode),
+  action: (p) => executerActionHorsLigne(p.nom, p.args),
 };
 
 export function estTypeOperation(t: string): t is TypeOperation {

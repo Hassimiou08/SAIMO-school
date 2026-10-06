@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
+import { executerAction } from "@/lib/offline/client";
 import { toast } from "sonner";
 import { MessageSquareText, Loader2, ChevronDown } from "lucide-react";
-import { actionMajAppreciationsBulletin } from "@/server/actions/bulletins";
 import { MENTIONS } from "@/lib/bulletin";
 
 interface MatiereAppr {
@@ -42,7 +42,7 @@ export function BulletinAppreciationsEditor({
 
   const enregistrer = () => {
     startTransition(async () => {
-      const r = await actionMajAppreciationsBulletin(bulletinId, {
+      const r = await executerAction("bulletins.majAppreciations", [bulletinId, {
         appreciation: generale,
         mention: mention || null,
         parMatiere: matieres.map((m) => ({
@@ -51,8 +51,9 @@ export function BulletinAppreciationsEditor({
           coefficient: m.coefficient,
           moyenne: m.moyenne,
         })),
-      });
+      }]);
       if (!r.succes) toast.error(r.erreur);
+      else if (r.enAttente) return;
       else {
         toast.success("Appréciations enregistrées");
         router.refresh();

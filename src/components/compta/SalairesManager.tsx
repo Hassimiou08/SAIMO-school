@@ -2,16 +2,10 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "@/lib/offline/router";
+import { executerAction, toastSucces } from "@/lib/offline/client";
 import { toast } from "sonner";
 import { Plus, Search, CheckCircle, Clock, Sparkles, Pencil } from "lucide-react";
 import type { ListeSalaires, SalaireRow } from "@/server/dal/compta";
-import {
-  actionCreerSalaire,
-  actionModifierSalaire,
-  actionPayerSalaire,
-  actionPayerSalairesGroupe,
-  actionGenererPaieMois,
-} from "@/server/actions/compta";
 import { Modale, Champ, Selecteur, Err, ModalActions } from "@/components/portal/_ui";
 import { formatGNF } from "@/lib/format";
 
@@ -98,11 +92,11 @@ export function SalairesManager({ data }: { data: ListeSalaires }) {
     setErreur("");
     startTransition(async () => {
       const r = edition
-        ? await actionModifierSalaire(edition.id, fd)
-        : await actionCreerSalaire(fd);
+        ? await executerAction("compta.modifierSalaire", [edition.id, fd])
+        : await executerAction("compta.creerSalaire", [fd]);
       if (!r.succes) setErreur(r.erreur);
       else {
-        toast.success(edition ? "Ligne de paie corrigée" : "Ligne de paie ajoutée");
+        toastSucces(r, edition ? "Ligne de paie corrigée" : "Ligne de paie ajoutée");
         fermerForm();
         router.refresh();
       }
@@ -111,9 +105,9 @@ export function SalairesManager({ data }: { data: ListeSalaires }) {
 
   const genererPaie = () =>
     startTransition(async () => {
-      const r = await actionGenererPaieMois(data.mois);
+      const r = await executerAction("compta.genererPaieMois", [data.mois]);
       if (!r.succes) toast.error(r.erreur);
-      else {
+      else if (!r.enAttente) {
         toast.success(`${r.data.crees} ligne(s) de paie générée(s)`);
         router.refresh();
       }
@@ -123,19 +117,19 @@ export function SalairesManager({ data }: { data: ListeSalaires }) {
     startTransition(async () => {
       if (!paiement) return;
       if (paiement.ids.length === 1) {
-        const r = await actionPayerSalaire(paiement.ids[0], mode);
+        const r = await executerAction("compta.payerSalaire", [paiement.ids[0], mode]);
         if (!r.succes) {
           toast.error(r.erreur);
           return;
         }
-        toast.success("Salaire réglé");
+        toastSucces(r, "Salaire réglé");
       } else {
-        const r = await actionPayerSalairesGroupe(paiement.ids, mode);
+        const r = await executerAction("compta.payerSalairesGroupe", [paiement.ids, mode]);
         if (!r.succes) {
           toast.error(r.erreur);
           return;
         }
-        toast.success(`${r.data.payes} salaire(s) réglé(s)`);
+        if (!r.enAttente) toast.success(`${r.data.payes} salaire(s) réglé(s)`);
       }
       setPaiement(null);
       setSelection([]);

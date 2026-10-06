@@ -1,15 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
+import { executerAction } from "@/lib/offline/client";
 import { Plus, Layers, Pencil } from "lucide-react";
 import type { CycleDTO, NiveauDTO } from "@/server/dal/pedagogie";
-import {
-  actionCreerCycle,
-  actionModifierCycle,
-  actionCreerNiveau,
-  actionModifierNiveau,
-} from "@/server/actions/pedagogie";
 import { Modale, Champ, Err, ModalActions } from "@/components/portal/_ui";
 
 type CycleModal = null | "new" | CycleDTO;
@@ -79,7 +74,7 @@ export function CyclesManager({ cycles }: { cycles: CycleDTO[] }) {
         <Modale titre={cycleEdit ? `Modifier — ${cycleEdit.nom}` : "Ajouter un cycle"} onClose={() => setCycleModal(null)}>
           <form
             action={(fd) => run(
-              () => (cycleEdit ? actionModifierCycle(cycleEdit.id, fd) : actionCreerCycle(fd)),
+              () => (cycleEdit ? executerAction("pedagogie.modifierCycle", [cycleEdit.id, fd]) : executerAction("pedagogie.creerCycle", [fd])),
               () => setCycleModal(null),
             )}
             className="space-y-4"
@@ -98,7 +93,7 @@ export function CyclesManager({ cycles }: { cycles: CycleDTO[] }) {
             action={(fd) => {
               if (!niveauEdit) fd.set("cycleId", niveauModal.cycleId);
               run(
-                () => (niveauEdit ? actionModifierNiveau(niveauEdit.id, fd) : actionCreerNiveau(fd)),
+                () => (niveauEdit ? executerAction("pedagogie.modifierNiveau", [niveauEdit.id, fd]) : executerAction("pedagogie.creerNiveau", [fd])),
                 () => setNiveauModal(null),
               );
             }}

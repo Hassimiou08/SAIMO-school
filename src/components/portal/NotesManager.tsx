@@ -8,8 +8,7 @@ import { Plus, ClipboardCheck, Lock, PencilLine } from "lucide-react";
 import type { EvaluationDTO } from "@/server/dal/evaluations";
 import type { PeriodeOption, TypeEvaluationOption } from "@/server/dal/evaluations";
 import type { ClasseOption, MatiereOption } from "@/server/dal/pedagogie";
-import { actionValiderEvaluation } from "@/server/actions/evaluations";
-import { useExecuterOperation, estHorsLigne, MESSAGE_CONNEXION_REQUISE } from "@/lib/offline/client";
+import { useExecuterOperation, executerAction } from "@/lib/offline/client";
 import { versEntrees } from "@/lib/offline/operations";
 import { Modale, Champ, Selecteur, Err, ModalActions } from "@/components/portal/_ui";
 
@@ -67,10 +66,9 @@ export function NotesManager({
     });
   };
   const verrouiller = (id: string) => {
-    if (estHorsLigne()) { toast.error(MESSAGE_CONNEXION_REQUISE); return; }
     if (!confirm("Verrouiller cette évaluation ? Les notes ne pourront plus être modifiées.")) return;
     startTransition(async () => {
-      const r = await actionValiderEvaluation(id);
+      const r = await executerAction("evaluations.valider", [id]);
       if (!r.succes) toast.error(r.erreur);
       else router.refresh();
     });

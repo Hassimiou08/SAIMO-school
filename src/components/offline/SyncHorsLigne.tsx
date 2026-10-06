@@ -1,13 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
 import { toast } from "sonner";
 import {
   Cloud, CloudOff, RefreshCw, Download, AlertTriangle, Trash2, RotateCcw, X, Loader2,
 } from "lucide-react";
 import { useCurrentUserOptional } from "@/components/providers/UserProvider";
-import { EVENEMENT_FILE, synchroniser, notifierChangement } from "@/lib/offline/client";
+import {
+  EVENEMENT_FILE, synchroniser, notifierChangement, definirUtilisateurHorsLigne,
+} from "@/lib/offline/client";
 import {
   listerOperations, supprimerOperation, remettreEnAttente, type OperationLocale,
 } from "@/lib/offline/outbox";
@@ -110,6 +112,7 @@ export function SyncHorsLigne() {
   // Initialisation : utilisateur, état réseau, file, préparation.
   useEffect(() => {
     if (!utilisateurId) return;
+    definirUtilisateurHorsLigne(utilisateurId);
     void (async () => {
       await verifierUtilisateurHorsLigne(utilisateurId);
       setEnLigne(navigator.onLine);

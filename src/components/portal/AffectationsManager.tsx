@@ -3,10 +3,10 @@
 import { toast } from "sonner";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
+import { executerAction } from "@/lib/offline/client";
 import { Plus, Star, Trash2 } from "lucide-react";
 import type { AffectationDTO, ClasseOption, MatiereOption, EnseignantOption } from "@/server/dal/pedagogie";
-import { actionCreerAffectation, actionSupprimerAffectation } from "@/server/actions/pedagogie";
 import { Modale, Selecteur, Err, ModalActions } from "@/components/portal/_ui";
 
 export function AffectationsManager({
@@ -57,7 +57,7 @@ export function AffectationsManager({
     const eid = String(fd.get("enseignantId") ?? "");
     const nom = enseignants.find((e) => e.id === eid)?.nom ?? "";
     startTransition(async () => {
-      const r = await actionCreerAffectation(fd);
+      const r = await executerAction("pedagogie.creerAffectation", [fd]);
       if (!r.succes) setErreur(r.erreur);
       else {
         setModal(false);
@@ -68,7 +68,7 @@ export function AffectationsManager({
   };
   const retirer = (id: string) =>
     startTransition(async () => {
-      const r = await actionSupprimerAffectation(id);
+      const r = await executerAction("pedagogie.supprimerAffectation", [id]);
       if (!r.succes) toast.error(r.erreur);
       else router.refresh();
     });

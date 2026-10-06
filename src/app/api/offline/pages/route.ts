@@ -80,6 +80,22 @@ export async function GET() {
         });
         details.push(...evals.map((e) => `/portail/notes/${e.id}`));
       }
+      if (peutFaire(role, "classe:view")) {
+        const classes = await prisma.classe.findMany({
+          where: { etablissementId, anneeScolaireId: annee.id },
+          select: { id: true },
+          take: MAX_DETAILS,
+        });
+        details.push(...classes.map((c) => `/portail/classes/${c.id}`));
+      }
+      if (peutFaire(role, "enseignant:view")) {
+        const enseignants = await prisma.enseignant.findMany({
+          where: { etablissementId },
+          select: { id: true },
+          take: MAX_DETAILS,
+        });
+        details.push(...enseignants.map((e) => `/portail/enseignants/${e.id}`));
+      }
       if (peutFaire(role, "eleve:view")) {
         const inscriptions = await prisma.inscription.findMany({
           where: { etablissementId, anneeScolaireId: annee.id, statut: "active" },

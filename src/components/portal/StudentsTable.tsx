@@ -4,10 +4,10 @@ import { toast } from "sonner";
 
 import { useMemo, useState, useEffect, useRef, useCallback, useTransition } from "react";
 import { useRouter } from "@/lib/offline/router";
+import { executerAction } from "@/lib/offline/client";
 import { gsap } from "gsap";
 import { Search, ChevronDown, ChevronUp, ArrowRight, MoreHorizontal, Pencil, Trash2, ShieldOff } from "lucide-react";
 import type { EleveListDTO } from "@/server/dal/eleves";
-import { actionArchiverEleve } from "@/server/actions/eleves";
 
 const STATUTS = ["Tous les statuts", "Actif", "Inactif"] as const;
 
@@ -101,7 +101,7 @@ export function StudentsTable({
     setOpenMenuId(null);
     if (!window.confirm(`Archiver ${nom} ? L'élève sera retiré des listes actives.`)) return;
     startTransition(async () => {
-      const res = await actionArchiverEleve(id);
+      const res = await executerAction("eleves.archiver", [id]);
       if (!res.succes) toast.error(res.erreur);
       else router.refresh();
     });

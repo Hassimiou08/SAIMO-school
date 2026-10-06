@@ -3,10 +3,10 @@
 import { toast } from "sonner";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
+import { executerAction } from "@/lib/offline/client";
 import { Plus, Megaphone, Eye, EyeOff, Calendar } from "lucide-react";
 import type { AnnonceDTO } from "@/server/dal/admin";
-import { actionCreerAnnonce, actionBasculerAnnonce } from "@/server/actions/admin";
 import { Modale, Champ, Err, ModalActions } from "@/components/portal/_ui";
 
 const ROLES = [
@@ -24,14 +24,14 @@ export function AnnoncesManager({ annonces }: { annonces: AnnonceDTO[] }) {
   const creer = (fd: FormData) => {
     setErreur("");
     startTransition(async () => {
-      const r = await actionCreerAnnonce(fd);
+      const r = await executerAction("admin.creerAnnonce", [fd]);
       if (!r.succes) setErreur(r.erreur);
       else { setModal(false); router.refresh(); }
     });
   };
   const basculer = (id: string) =>
     startTransition(async () => {
-      const r = await actionBasculerAnnonce(id);
+      const r = await executerAction("admin.basculerAnnonce", [id]);
       if (!r.succes) toast.error(r.erreur);
       else router.refresh();
     });
