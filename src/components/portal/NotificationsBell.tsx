@@ -20,11 +20,15 @@ export function NotificationsBell() {
   const boxRef = useRef<HTMLDivElement>(null);
 
   const rafraichir = () => {
+    if (!navigator.onLine) return; // hors connexion : on garde la dernière liste
     setCharge(true);
     actionListerNotifications()
       .then((r) => {
         setItems(r.items);
         setTotal(r.total);
+      })
+      .catch(() => {
+        /* réseau coupé pendant l'appel : nouvel essai à la prochaine échéance */
       })
       .finally(() => setCharge(false));
   };

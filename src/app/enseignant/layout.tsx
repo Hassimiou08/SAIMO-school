@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUserView, homeForRole } from "@/server/context";
 import { UserProvider } from "@/components/providers/UserProvider";
+import { SyncHorsLigne } from "@/components/offline/SyncHorsLigne";
 
 export default async function EnseignantLayout({
   children,
@@ -13,5 +14,10 @@ export default async function EnseignantLayout({
     redirect(homeForRole(view.role));
   }
 
-  return <UserProvider value={view}>{children}</UserProvider>;
+  return (
+    <UserProvider value={view}>
+      {children}
+      <SyncHorsLigne />
+    </UserProvider>
+  );
 }

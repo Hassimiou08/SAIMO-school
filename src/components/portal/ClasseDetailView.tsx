@@ -3,12 +3,12 @@
 import { toast } from "sonner";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
+import { executerAction } from "@/lib/offline/client";
 import Link from "next/link";
 import { Users, User, CalendarRange, Trash2, Plus, X, Loader2, Pencil } from "lucide-react";
 import type { ClasseDetailDTO, NiveauOption } from "@/server/dal/pedagogie";
 import type { MatiereOption, EnseignantOption } from "@/server/dal/pedagogie";
-import { actionCreerAffectation, actionSupprimerAffectation, actionModifierClasse } from "@/server/actions/pedagogie";
 import { Modale, Champ, Selecteur, Err, ModalActions } from "@/components/portal/_ui";
 
 const JOURS = ["", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
@@ -39,7 +39,7 @@ export function ClasseDetailView({
   const modifier = (fd: FormData) => {
     setErreur("");
     startTransition(async () => {
-      const r = await actionModifierClasse(classe.id, fd);
+      const r = await executerAction("pedagogie.modifierClasse", [classe.id, fd]);
       if (!r.succes) setErreur(r.erreur);
       else { setEditModal(false); router.refresh(); }
     });
@@ -49,7 +49,7 @@ export function ClasseDetailView({
     fd.set("classeId", classe.id);
     setErreur("");
     startTransition(async () => {
-      const res = await actionCreerAffectation(fd);
+      const res = await executerAction("pedagogie.creerAffectation", [fd]);
       if (!res.succes) setErreur(res.erreur);
       else { setModal(false); router.refresh(); }
     });
@@ -57,7 +57,7 @@ export function ClasseDetailView({
 
   const retirer = (id: string) => {
     startTransition(async () => {
-      const res = await actionSupprimerAffectation(id);
+      const res = await executerAction("pedagogie.supprimerAffectation", [id]);
       if (!res.succes) toast.error(res.erreur);
       else router.refresh();
     });

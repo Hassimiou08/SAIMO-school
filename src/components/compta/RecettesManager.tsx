@@ -1,12 +1,13 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
 import { toast } from "sonner";
 import { Plus, Search, CheckCircle, XCircle } from "lucide-react";
 import type { RecetteRow } from "@/server/dal/compta";
 import type { FraisRowDTO } from "@/server/dal/finance";
-import { actionEnregistrerPaiement } from "@/server/actions/finance";
+import { useExecuterOperation } from "@/lib/offline/client";
+import { versEntrees } from "@/lib/offline/operations";
 import { Modale, Champ, Selecteur, Err, ModalActions } from "@/components/portal/_ui";
 import { formatGNF } from "@/lib/format";
 
@@ -25,6 +26,7 @@ export function RecettesManager({
   frais: FraisRowDTO[];
 }) {
   const router = useRouter();
+  const executer = useExecuterOperation();
   const [isPending, startTransition] = useTransition();
   const [q, setQ] = useState("");
   const [modal, setModal] = useState(false);
@@ -72,10 +74,17 @@ export function RecettesManager({
       setErreur("Sélectionnez un frais à encaisser.");
       return;
     }
+    const f = impayes.find((x) => x.id === fd.get("fraisEleveId"));
+    const libelle = `Encaissement — ${f?.eleve ?? "élève"} : ${formatGNF(Number(fd.get("montant")) || 0)}`;
     startTransition(async () => {
-      const r = await actionEnregistrerPaiement(fd);
+      const r = await executer<"paiement.enregistrer", { numeroRecu: string; paiementId: string }>(
+        "paiement.enregistrer", { form: versEntrees(fd) }, libelle,
+      );
       if (!r.succes) {
         setErreur(r.erreur);
+      } else if (r.enAttente) {
+        setModal(false);
+        toast.info("Encaissement enregistré sur cet appareil. Le reçu sera numéroté à la synchronisation.");
       } else {
         setModal(false);
         toast.success(`Encaissement enregistré — reçu ${r.data.numeroRecu}`);

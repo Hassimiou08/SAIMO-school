@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
 import { toast } from "sonner";
 import {
   Plus, Building2, Ban, RotateCcw, Mail, Clock, GraduationCap, ShieldCheck,

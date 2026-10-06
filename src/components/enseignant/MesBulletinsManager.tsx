@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
+import { executerAction } from "@/lib/offline/client";
 import { toast } from "sonner";
 import { Sparkles, FileText, Loader2 } from "lucide-react";
-import { actionGenererBulletins } from "@/server/actions/bulletins";
 import type { MonBulletinLigne } from "@/server/dal/enseignant";
 
 interface Opt {
@@ -43,8 +43,10 @@ export function MesBulletinsManager({
     }
     setMsg("");
     startTransition(async () => {
-      const r = await actionGenererBulletins(classeSel, periodeSel);
-      if (r.succes) {
+      const r = await executerAction("bulletins.generer", [classeSel, periodeSel]);
+      if (r.succes && r.enAttente) {
+        setMsg("Génération enregistrée sur cet appareil : elle sera faite au retour de la connexion.");
+      } else if (r.succes) {
         setMsg(`${r.data.nombre} bulletin(s) généré(s).`);
         toast.success(`${r.data.nombre} bulletin(s) généré(s).`);
         router.refresh();

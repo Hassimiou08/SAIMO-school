@@ -2,11 +2,13 @@
 
 import { useActionState, useEffect } from "react";
 import { useFormStatus } from "react-dom";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
 import Link from "next/link";
 import { Save, Loader2 } from "lucide-react";
 import type { EleveDetailDTO } from "@/server/dal/eleves";
-import { actionModifierEleve, type ActionResult } from "@/server/actions/eleves";
+import { toast } from "sonner";
+import { useExecuterOperation, type ResultatHorsLigne } from "@/lib/offline/client";
+import { versEntrees } from "@/lib/offline/operations";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -27,13 +29,23 @@ const champ =
 
 export function EleveEditForm({ eleve }: { eleve: EleveDetailDTO }) {
   const router = useRouter();
-  const [state, formAction] = useActionState<ActionResult | null, FormData>(
-    async (_prev, formData) => actionModifierEleve(eleve.id, formData),
+  const executer = useExecuterOperation();
+  const [state, formAction] = useActionState<ResultatHorsLigne<unknown> | null, FormData>(
+    async (_prev, formData) =>
+      executer(
+        "eleve.modifier",
+        { eleveId: eleve.id, form: versEntrees(formData) },
+        `Fiche élève — ${formData.get("prenom")} ${formData.get("nom")}`,
+      ),
     null,
   );
 
   useEffect(() => {
-    if (state?.succes) router.push(`/portail/eleves/${eleve.id}`);
+    if (!state?.succes) return;
+    if (state.enAttente) {
+      toast.info("Modifications enregistrées sur cet appareil : elles seront envoyées au retour de la connexion.");
+    }
+    router.push(`/portail/eleves/${eleve.id}`);
   }, [state, eleve.id, router]);
 
   return (

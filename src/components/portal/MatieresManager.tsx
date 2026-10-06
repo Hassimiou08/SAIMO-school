@@ -3,14 +3,10 @@
 import { toast } from "sonner";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
+import { executerAction } from "@/lib/offline/client";
 import { Search, Plus, CheckCircle, XCircle, Pencil } from "lucide-react";
 import type { MatiereDTO, NiveauOption } from "@/server/dal/pedagogie";
-import {
-  actionCreerMatiere,
-  actionModifierMatiere,
-  actionBasculerMatiere,
-} from "@/server/actions/pedagogie";
 import { Modale, Champ, Err, ModalActions } from "@/components/portal/_ui";
 
 type ModalState = null | "new" | MatiereDTO;
@@ -39,15 +35,15 @@ export function MatieresManager({
     setErreur("");
     startTransition(async () => {
       const r = edition
-        ? await actionModifierMatiere(edition.id, fd)
-        : await actionCreerMatiere(fd);
+        ? await executerAction("pedagogie.modifierMatiere", [edition.id, fd])
+        : await executerAction("pedagogie.creerMatiere", [fd]);
       if (!r.succes) setErreur(r.erreur);
       else { setModal(null); router.refresh(); }
     });
   };
   const basculer = (id: string) =>
     startTransition(async () => {
-      const r = await actionBasculerMatiere(id);
+      const r = await executerAction("pedagogie.basculerMatiere", [id]);
       if (!r.succes) toast.error(r.erreur);
       else router.refresh();
     });

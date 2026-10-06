@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
 import Link from "next/link";
 import { Search, ChevronDown, MoreHorizontal, Pencil, UserPlus } from "lucide-react";
 import type { EnseignantDTO } from "@/server/dal/pedagogie";

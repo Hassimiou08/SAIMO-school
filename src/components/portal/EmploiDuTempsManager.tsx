@@ -3,15 +3,11 @@
 import { toast } from "sonner";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
+import { executerAction } from "@/lib/offline/client";
 import Link from "next/link";
 import { Plus, Trash2, Clock, CalendarRange, Pencil, CheckCircle2 } from "lucide-react";
 import type { CreneauDTO, ClasseOption, MatiereOption, EnseignantOption } from "@/server/dal/pedagogie";
-import {
-  actionCreerCreneau,
-  actionModifierCreneau,
-  actionSupprimerCreneau,
-} from "@/server/actions/pedagogie";
 import { Modale, Champ, Selecteur, Err, ModalActions } from "@/components/portal/_ui";
 import { FilParcours, ETAPES_RECRUTEMENT } from "@/components/portal/FilParcours";
 
@@ -107,15 +103,15 @@ export function EmploiDuTempsManager({
     setErreur("");
     startTransition(async () => {
       const r = edition
-        ? await actionModifierCreneau(edition.id, fd)
-        : await actionCreerCreneau(fd);
+        ? await executerAction("pedagogie.modifierCreneau", [edition.id, fd])
+        : await executerAction("pedagogie.creerCreneau", [fd]);
       if (!r.succes) setErreur(r.erreur);
       else { setModal(null); router.refresh(); }
     });
   };
   const retirer = (id: string) =>
     startTransition(async () => {
-      const r = await actionSupprimerCreneau(id);
+      const r = await executerAction("pedagogie.supprimerCreneau", [id]);
       if (!r.succes) toast.error(r.erreur);
       else { setModal(null); router.refresh(); }
     });

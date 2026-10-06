@@ -3,12 +3,13 @@
 import { toast } from "sonner";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
 import { Plus, ClipboardCheck, Lock, PencilLine } from "lucide-react";
 import type { EvaluationDTO } from "@/server/dal/evaluations";
 import type { PeriodeOption, TypeEvaluationOption } from "@/server/dal/evaluations";
 import type { ClasseOption, MatiereOption } from "@/server/dal/pedagogie";
-import { actionCreerEvaluation, actionValiderEvaluation } from "@/server/actions/evaluations";
+import { useExecuterOperation, executerAction } from "@/lib/offline/client";
+import { versEntrees } from "@/lib/offline/operations";
 import { Modale, Champ, Selecteur, Err, ModalActions } from "@/components/portal/_ui";
 
 export function NotesManager({
@@ -29,6 +30,7 @@ export function NotesManager({
   filtrePeriode?: string;
 }) {
   const router = useRouter();
+  const executer = useExecuterOperation();
   const [isPending, startTransition] = useTransition();
   const [modal, setModal] = useState(false);
   const [erreur, setErreur] = useState("");
@@ -50,15 +52,23 @@ export function NotesManager({
   const creer = (fd: FormData) => {
     setErreur("");
     startTransition(async () => {
-      const r = await actionCreerEvaluation(fd);
+      const r = await executer<"evaluation.creer", { id: string }>(
+        "evaluation.creer",
+        { form: versEntrees(fd) },
+        `Nouvelle évaluation — ${fd.get("titre") || "sans titre"}`,
+      );
       if (!r.succes) setErreur(r.erreur);
+      else if (r.enAttente) {
+        setModal(false);
+        toast.info("Évaluation enregistrée sur cet appareil : elle sera créée au retour de la connexion, puis vous pourrez saisir les notes.");
+      }
       else { setModal(false); router.push(`/portail/notes/${r.data.id}`); }
     });
   };
   const verrouiller = (id: string) => {
     if (!confirm("Verrouiller cette évaluation ? Les notes ne pourront plus être modifiées.")) return;
     startTransition(async () => {
-      const r = await actionValiderEvaluation(id);
+      const r = await executerAction("evaluations.valider", [id]);
       if (!r.succes) toast.error(r.erreur);
       else router.refresh();
     });

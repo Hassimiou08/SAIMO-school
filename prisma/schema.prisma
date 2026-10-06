@@ -961,3 +961,25 @@ model Message {
   @@index([conversationId, createdAt])
   @@map("messages")
 }
+
+// ─────────────────────────────────────────────
+// MODE HORS LIGNE
+// ─────────────────────────────────────────────
+
+// Opération saisie sur un appareil (éventuellement hors connexion) puis
+// envoyée au serveur. L'id est généré par l'appareil : une opération déjà
+// présente ici n'est jamais rejouée (synchronisation idempotente).
+model OperationSync {
+  id              String   @id
+  utilisateurId   String
+  etablissementId String
+  type            String
+  // en_cours pendant l'exécution, puis appliquee
+  statut          String   @default("en_cours")
+  resultat        Json?
+  saisieLe        DateTime // date de saisie sur l'appareil
+  synchroniseLe   DateTime @default(now())
+
+  @@index([etablissementId, synchroniseLe])
+  @@map("operations_sync")
+}

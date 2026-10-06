@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
+import { executerAction } from "@/lib/offline/client";
 import { Search, ChevronDown, MoreHorizontal, Pencil, Users, Plus, X, Loader2 } from "lucide-react";
 import type { ClasseDTO } from "@/server/dal/pedagogie";
 import type { NiveauOption } from "@/server/dal/pedagogie";
-import { actionCreerClasse } from "@/server/actions/pedagogie";
 
 export function ClassesTable({
   classes,
@@ -43,7 +43,7 @@ export function ClassesTable({
   const soumettre = (formData: FormData) => {
     setErreur("");
     startTransition(async () => {
-      const res = await actionCreerClasse(formData);
+      const res = await executerAction("pedagogie.creerClasse", [formData]);
       if (!res.succes) setErreur(res.erreur);
       else {
         setModal(false);

@@ -3,14 +3,11 @@
 import { toast } from "sonner";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
+import { executerAction } from "@/lib/offline/client";
 import { Phone, Mail, Check, X, UserPlus, CheckCircle2, AlertTriangle } from "lucide-react";
 import type { PreInscriptionDTO, StatsPreInscriptions } from "@/server/dal/preinscriptions";
 import type { ClasseOption } from "@/server/dal/pedagogie";
-import {
-  actionMarquerPreInscription,
-  actionConvertirPreInscription,
-} from "@/server/actions/preinscriptions";
 import { Modale, Selecteur, Err, ModalActions } from "@/components/portal/_ui";
 
 const FILTRES = [
@@ -52,7 +49,7 @@ export function PreInscriptionsManager({
 
   const marquer = (id: string, statut: "contactee" | "acceptee" | "refusee") =>
     startTransition(async () => {
-      const r = await actionMarquerPreInscription(id, statut);
+      const r = await executerAction("preinscriptions.marquer", [id, statut]);
       if (!r.succes) toast.error(r.erreur);
       else router.refresh();
     });
@@ -61,8 +58,9 @@ export function PreInscriptionsManager({
     if (!convertir) return;
     setErreur("");
     startTransition(async () => {
-      const r = await actionConvertirPreInscription(convertir.id, String(fd.get("classeId")));
+      const r = await executerAction("preinscriptions.convertir", [convertir.id, String(fd.get("classeId"))]);
       if (!r.succes) setErreur(r.erreur);
+      else if (r.enAttente) setConvertir(null);
       else {
         setConvertir(null);
         router.push(`/portail/eleves/${r.data.eleveId}/finaliser`);

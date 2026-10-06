@@ -3,11 +3,11 @@
 import { toast } from "sonner";
 
 import { useMemo, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
+import { executerAction } from "@/lib/offline/client";
 import Link from "next/link";
 import { Plus, Trash2, Star, CalendarRange, Loader2 } from "lucide-react";
 import type { ClasseOption, MatiereOption } from "@/server/dal/pedagogie";
-import { actionCreerAffectation, actionSupprimerAffectation } from "@/server/actions/pedagogie";
 
 type Affectation = { id: string; matiere: string; classe: string; profPrincipal: boolean };
 
@@ -50,7 +50,7 @@ export function AffecterEnseignantView({
     fd.set("enseignantId", enseignantId);
     setErreur("");
     startTransition(async () => {
-      const r = await actionCreerAffectation(fd);
+      const r = await executerAction("pedagogie.creerAffectation", [fd]);
       if (!r.succes) setErreur(r.erreur);
       else {
         formRef.current?.reset();
@@ -62,7 +62,7 @@ export function AffecterEnseignantView({
   };
   const retirer = (id: string) =>
     startTransition(async () => {
-      const r = await actionSupprimerAffectation(id);
+      const r = await executerAction("pedagogie.supprimerAffectation", [id]);
       if (!r.succes) toast.error(r.erreur);
       else router.refresh();
     });

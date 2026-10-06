@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUserView, homeForRole } from "@/server/context";
 import { peutFaire } from "@/server/permissions/roles";
 import { UserProvider } from "@/components/providers/UserProvider";
+import { SyncHorsLigne } from "@/components/offline/SyncHorsLigne";
 
 export default async function ComptaLayout({
   children,
@@ -15,5 +16,10 @@ export default async function ComptaLayout({
     view.role === "COMPTABLE" || peutFaire(view.role, "rapport:financier");
   if (!autorise) redirect(homeForRole(view.role));
 
-  return <UserProvider value={view}>{children}</UserProvider>;
+  return (
+    <UserProvider value={view}>
+      {children}
+      <SyncHorsLigne />
+    </UserProvider>
+  );
 }

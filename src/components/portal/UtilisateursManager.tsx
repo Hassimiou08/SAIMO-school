@@ -3,10 +3,10 @@
 import { toast } from "sonner";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
+import { executerAction } from "@/lib/offline/client";
 import { Plus, Search, UserCheck, UserX, CheckCircle2 } from "lucide-react";
 import type { UtilisateurDTO } from "@/server/dal/admin";
-import { actionCreerUtilisateur, actionBasculerUtilisateur } from "@/server/actions/admin";
 import { Modale, Champ, Selecteur, Err, ModalActions } from "@/components/portal/_ui";
 
 const ROLES = [
@@ -37,14 +37,15 @@ export function UtilisateursManager({ utilisateurs }: { utilisateurs: Utilisateu
   const creer = (fd: FormData) => {
     setErreur("");
     startTransition(async () => {
-      const r = await actionCreerUtilisateur(fd);
+      const r = await executerAction("admin.creerUtilisateur", [fd]);
       if (!r.succes) setErreur(r.erreur);
+      else if (r.enAttente) setModal(false);
       else { setModal(false); setOk(`Compte créé — mot de passe provisoire : ${r.data.motDePasse}`); router.refresh(); }
     });
   };
   const basculer = (id: string) =>
     startTransition(async () => {
-      const r = await actionBasculerUtilisateur(id);
+      const r = await executerAction("admin.basculerUtilisateur", [id]);
       if (!r.succes) toast.error(r.erreur);
       else router.refresh();
     });

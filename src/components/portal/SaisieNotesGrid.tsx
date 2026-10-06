@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "@/lib/offline/router";
 import Link from "next/link";
 import { toast } from "sonner";
 import { ArrowLeft, Save, Lock, Unlock, Loader2, CheckCircle2 } from "lucide-react";
 import type { SaisieNoteLigne } from "@/server/dal/evaluations";
+import { useCurrentUserOptional } from "@/components/providers/UserProvider";
 import {
-  actionSaisirNotes,
-  actionValiderEvaluation,
-  actionDeverrouillerEvaluation,
-} from "@/server/actions/evaluations";
+  useExecuterOperation, executerAction, toastSucces, EVENEMENT_FILE,
+} from "@/lib/offline/client";
+import { listerOperations, type OperationLocale } from "@/lib/offline/outbox";
 
 type Etat = Record<string, { valeur: string; absent: boolean; dispense: boolean; observations: string }>;
 
@@ -33,6 +33,8 @@ export function SaisieNotesGrid({
   peutDeverrouiller?: boolean;
 }) {
   const router = useRouter();
+  const executer = useExecuterOperation();
+  const utilisateurId = useCurrentUserOptional()?.id;
   const [isPending, startTransition] = useTransition();
   const [msg, setMsg] = useState<{ type: "ok" | "err"; texte: string } | null>(null);
   const [etat, setEtat] = useState<Etat>(() =>
@@ -52,6 +54,40 @@ export function SaisieNotesGrid({
   const maj = (id: string, patch: Partial<Etat[string]>) =>
     setEtat((e) => ({ ...e, [id]: { ...e[id], ...patch } }));
 
+  // Notes saisies hors ligne pour cette évaluation, pas encore synchronisées :
+  // on les réaffiche à la place des valeurs du serveur.
+  const [nonSynchronise, setNonSynchronise] = useState(false);
+  useEffect(() => {
+    if (!utilisateurId) return;
+    const charger = async () => {
+      const ops = await listerOperations(utilisateurId).catch((): OperationLocale[] => []);
+      const derniere = ops
+        .filter((o): o is OperationLocale<"notes.saisir"> =>
+          o.type === "notes.saisir" &&
+          (o.payload as { evaluationId: string }).evaluationId === evaluation.id)
+        .pop();
+      setNonSynchronise(!!derniere);
+      if (!derniere) return;
+      setEtat((e) => {
+        const suivant = { ...e };
+        for (const n of derniere.payload.notes) {
+          if (!suivant[n.eleveId]) continue;
+          suivant[n.eleveId] = {
+            valeur: n.valeur != null ? String(n.valeur) : "",
+            absent: !!n.absent,
+            dispense: !!n.dispense,
+            observations: n.observations ?? "",
+          };
+        }
+        return suivant;
+      });
+    };
+    void charger();
+    const surFile = () => void charger();
+    window.addEventListener(EVENEMENT_FILE, surFile);
+    return () => window.removeEventListener(EVENEMENT_FILE, surFile);
+  }, [utilisateurId, evaluation.id]);
+
   const enregistrer = () => {
     setMsg(null);
     const notes = evaluation.lignes.map((l) => {
@@ -65,8 +101,17 @@ export function SaisieNotesGrid({
       };
     });
     startTransition(async () => {
-      const r = await actionSaisirNotes(evaluation.id, notes);
+      const r = await executer(
+        "notes.saisir",
+        { evaluationId: evaluation.id, notes },
+        `Notes — ${evaluation.titre} (${evaluation.classe})`,
+      );
       if (!r.succes) { setMsg({ type: "err", texte: r.erreur }); toast.error(r.erreur); }
+      else if (r.enAttente) {
+        const texte = "Notes enregistrées sur cet appareil : elles seront envoyées dès le retour de la connexion.";
+        setMsg({ type: "ok", texte });
+        toast.info(texte);
+      }
       else { setMsg({ type: "ok", texte: "Notes enregistrées." }); toast.success("Notes enregistrées."); router.refresh(); }
     });
   };
@@ -74,9 +119,9 @@ export function SaisieNotesGrid({
   const verrouiller = () => {
     if (!confirm("Verrouiller ? Les notes ne seront plus modifiables.")) return;
     startTransition(async () => {
-      const r = await actionValiderEvaluation(evaluation.id);
+      const r = await executerAction("evaluations.valider", [evaluation.id]);
       if (!r.succes) { setMsg({ type: "err", texte: r.erreur }); toast.error(r.erreur); }
-      else { toast.success("Évaluation verrouillée."); router.push(retour); }
+      else { toastSucces(r, "Évaluation verrouillée."); router.push(retour); }
     });
   };
 
@@ -84,9 +129,9 @@ export function SaisieNotesGrid({
     if (!confirm("Déverrouiller cette évaluation pour corriger les notes ? Les bulletins générés devront être régénérés.")) return;
     setMsg(null);
     startTransition(async () => {
-      const r = await actionDeverrouillerEvaluation(evaluation.id);
+      const r = await executerAction("evaluations.deverrouiller", [evaluation.id]);
       if (!r.succes) { setMsg({ type: "err", texte: r.erreur }); toast.error(r.erreur); }
-      else { toast.success("Évaluation déverrouillée — vous pouvez corriger les notes."); router.refresh(); }
+      else { toastSucces(r, "Évaluation déverrouillée — vous pouvez corriger les notes."); router.refresh(); }
     });
   };
 
@@ -103,6 +148,12 @@ export function SaisieNotesGrid({
           {evaluation.verrouillee && <span className="ml-2 rounded-full bg-neutral-800 px-2 py-0.5 text-[11px] font-semibold text-white">Verrouillée</span>}
         </p>
       </div>
+
+      {nonSynchronise && (
+        <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          Notes saisies hors ligne, pas encore synchronisées : elles seront envoyées au retour de la connexion.
+        </p>
+      )}
 
       <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
         <table className="w-full text-left text-sm">

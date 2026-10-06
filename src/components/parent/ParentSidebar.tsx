@@ -1,6 +1,7 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
 import Link from "next/link";
 import {
   LayoutDashboard, BookOpen, FileText,

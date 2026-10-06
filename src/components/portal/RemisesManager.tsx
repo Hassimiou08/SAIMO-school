@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
+import { executerAction } from "@/lib/offline/client";
 import { Plus, Tag, Search } from "lucide-react";
 import type { RemiseRowDTO, FraisRowDTO } from "@/server/dal/finance";
-import { actionCreerRemise } from "@/server/actions/finance";
 import { Modale, Champ, Selecteur, Err, ModalActions } from "@/components/portal/_ui";
 import { formatGNF } from "@/lib/format";
 
@@ -29,7 +29,7 @@ export function RemisesManager({
   const creer = (fd: FormData) => {
     setErreur("");
     startTransition(async () => {
-      const r = await actionCreerRemise(fd);
+      const r = await executerAction("finance.creerRemise", [fd]);
       if (!r.succes) setErreur(r.erreur);
       else { setModal(false); router.refresh(); }
     });

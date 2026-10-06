@@ -25,6 +25,8 @@ export interface EnregistrerPaiementInput {
   observation?: string;
   encaisseParId: string;
   etablissementId: string;
+  /** Date réelle d'encaissement (saisie hors ligne) ; maintenant par défaut. */
+  date?: Date;
 }
 
 export async function enregistrerPaiement(input: EnregistrerPaiementInput) {
@@ -61,6 +63,7 @@ export async function enregistrerPaiement(input: EnregistrerPaiementInput) {
         reference: input.reference,
         observation: input.observation,
         encaisseParId: input.encaisseParId,
+        date: input.date,
       });
       break;
     } catch (e) {

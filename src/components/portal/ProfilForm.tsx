@@ -1,12 +1,13 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
+import { executerAction, toastSucces } from "@/lib/offline/client";
 import { toast } from "sonner";
 import { User, KeyRound, Loader2, Camera, Trash2, PenLine } from "lucide-react";
 import { Champ } from "@/components/portal/_ui";
 import { SignaturePad } from "@/components/portal/SignaturePad";
-import { actionMajProfil, actionChangerMotDePasse } from "@/server/actions/profil";
+import { actionChangerMotDePasse } from "@/server/actions/profil";
 
 export interface ProfilData {
   prenom: string;
@@ -116,12 +117,12 @@ export function ProfilForm({
     fd.set("photo", photo ?? "");
     fd.set("signature", signature ?? "");
     startInfos(async () => {
-      const r = await actionMajProfil(fd);
+      const r = await executerAction("profil.maj", [fd]);
       if (!r.succes) {
         setErreurInfos(r.erreur);
         toast.error(r.erreur);
       } else {
-        toast.success("Profil mis à jour");
+        toastSucces(r, "Profil mis à jour");
         router.refresh();
       }
     });

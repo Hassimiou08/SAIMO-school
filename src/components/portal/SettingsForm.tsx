@@ -3,22 +3,13 @@
 import { toast } from "sonner";
 
 import { useRef, useState, useEffect, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/offline/router";
+import { executerAction, toastSucces } from "@/lib/offline/client";
 import {
   Save, Building, Palette, CalendarClock, Loader2, CheckCircle2, Check,
   Plus, CircleCheck, ImagePlus, Type, ClipboardList, Trash2,
 } from "lucide-react";
 import { COLOR_MAP, GRADIENT_MAP, FONT_MAP, TAILLE_MAP } from "@/lib/theme";
-import {
-  actionMajEtablissement,
-  actionMajApparence,
-  actionCreerPeriode,
-  actionActiverPeriode,
-} from "@/server/actions/admin";
-import {
-  actionCreerTypeEvaluation,
-  actionSupprimerTypeEvaluation,
-} from "@/server/actions/pedagogie";
 import { Modale, Champ, Err, ModalActions } from "@/components/portal/_ui";
 import { useFormStatus } from "react-dom";
 
@@ -117,7 +108,7 @@ export function SettingsForm({ etablissement, annees, typesEvaluation }: Props) 
       fd.set("degradeTheme", next.degradeTheme);
       fd.set("police", next.police);
       fd.set("tailleTexte", next.tailleTexte);
-      const r = await actionMajApparence(fd);
+      const r = await executerAction("admin.majApparence", [fd]);
       if (!r.succes) toast.error(r.erreur);
       else router.refresh();
     });
@@ -127,10 +118,10 @@ export function SettingsForm({ etablissement, annees, typesEvaluation }: Props) 
     if (!anneeActive) return;
     setErreurPeriode("");
     startTransition(async () => {
-      const r = await actionCreerPeriode(anneeActive.id, fd);
+      const r = await executerAction("admin.creerPeriode", [anneeActive.id, fd]);
       if (!r.succes) setErreurPeriode(r.erreur);
       else {
-        toast.success("Période créée");
+        toastSucces(r, "Période créée");
         setModalPeriode(false);
         router.refresh();
       }
@@ -139,10 +130,10 @@ export function SettingsForm({ etablissement, annees, typesEvaluation }: Props) 
 
   const activerPeriode = (id: string) => {
     startTransition(async () => {
-      const r = await actionActiverPeriode(id);
+      const r = await executerAction("admin.activerPeriode", [id]);
       if (!r.succes) toast.error(r.erreur);
       else {
-        toast.success("Période activée");
+        toastSucces(r, "Période activée");
         router.refresh();
       }
     });
@@ -151,10 +142,10 @@ export function SettingsForm({ etablissement, annees, typesEvaluation }: Props) 
   const creerTypeEvaluation = (fd: FormData) => {
     setErreurType("");
     startTransition(async () => {
-      const r = await actionCreerTypeEvaluation(fd);
+      const r = await executerAction("pedagogie.creerTypeEvaluation", [fd]);
       if (!r.succes) setErreurType(r.erreur);
       else {
-        toast.success("Type d'évaluation créé");
+        toastSucces(r, "Type d'évaluation créé");
         setModalType(false);
         router.refresh();
       }
@@ -163,10 +154,10 @@ export function SettingsForm({ etablissement, annees, typesEvaluation }: Props) 
 
   const supprimerTypeEvaluation = (id: string) => {
     startTransition(async () => {
-      const r = await actionSupprimerTypeEvaluation(id);
+      const r = await executerAction("pedagogie.supprimerTypeEvaluation", [id]);
       if (!r.succes) toast.error(r.erreur);
       else {
-        toast.success("Type d'évaluation supprimé");
+        toastSucces(r, "Type d'évaluation supprimé");
         router.refresh();
       }
     });
@@ -203,7 +194,7 @@ export function SettingsForm({ etablissement, annees, typesEvaluation }: Props) 
   const submitInfos = (fd: FormData) => {
     fd.set("logo", logo ?? "");
     startTransition(async () => {
-      const r = await actionMajEtablissement(fd);
+      const r = await executerAction("admin.majEtablissement", [fd]);
       if (r.succes) { setOk(true); router.refresh(); }
       else toast.error(r.erreur);
     });
