@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireContext } from "@/server/context";
 import { enregistrerPaiement } from "@/server/services/paiement.service";
 import { mesEnfants } from "@/server/dal/parent";
+import { paiementEnLigneActif } from "@/server/external/paiement-en-ligne";
 import { messageErreur as msg } from "@/server/errors";
 import type { ActionResult } from "./eleves";
 
@@ -16,8 +17,8 @@ const LIBELLE_METHODE: Record<string, string> = {
 
 /**
  * Paiement en ligne d'une échéance par le parent (mobile money / carte).
- * L'encaissement réel via l'agrégateur est simulé côté UI ; ici on enregistre
- * le paiement + le reçu comme un encaissement standard.
+ * Désactivé tant qu'aucun agrégateur n'est branché (voir paiementEnLigneActif) :
+ * sinon un paiement et un reçu seraient enregistrés sans argent reçu.
  */
 export async function actionPayerFraisEnfant(
   fraisEleveId: string,
@@ -28,6 +29,12 @@ export async function actionPayerFraisEnfant(
     const ctx = await requireContext();
     if (ctx.role !== "PARENT") {
       return { succes: false, erreur: "Réservé au parent." };
+    }
+    if (!paiementEnLigneActif()) {
+      return {
+        succes: false,
+        erreur: "Le paiement en ligne n'est pas encore disponible. Réglez auprès de la comptabilité de l'école.",
+      };
     }
 
     const frais = await prisma.fraisEleve.findFirst({

@@ -8,6 +8,7 @@ import {
   Megaphone, MessageSquare, ArrowLeft
 } from "lucide-react";
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { useMenuMobile, classesMenu, FondMenuMobile } from "@/components/MenuMobile";
 import {
   useCurrentUserOptional,
   libelleRole,
@@ -27,6 +28,7 @@ const NAV = [
 export function ComptaSidebar() {
   const pathname = usePathname();
   const user = useCurrentUserOptional();
+  const menu = useMenuMobile();
   const nom = user?.name ?? "Utilisateur";
   const roleLabel = user ? libelleRole(user.role) : "Comptabilité";
   const nomEtab = user?.etablissementNom;
@@ -35,7 +37,9 @@ export function ComptaSidebar() {
     href === "/compta" ? pathname === href : pathname.startsWith(href);
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col lg:flex overflow-hidden">
+    <>
+    <FondMenuMobile />
+    <aside className={`fixed inset-y-0 left-0 z-40 w-64 flex-col overflow-hidden ${classesMenu(menu.ouvert)}`}>
       {/* Fond bleu — même famille que l'admin, légèrement plus profond */}
       <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, #1e3a8a, #1d4ed8)" }} />
       {/* Texture subtile identique à l'admin */}
@@ -61,7 +65,7 @@ export function ComptaSidebar() {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto px-3 py-5 space-y-1">
+        <nav onClick={menu.fermer} className="flex-1 overflow-y-auto px-3 py-5 space-y-1">
           <p className="px-3 text-[9px] uppercase tracking-widest text-blue-200/40 font-bold mb-3">Navigation</p>
           {user && user.role !== "COMPTABLE" && (
             <Link
@@ -110,5 +114,6 @@ export function ComptaSidebar() {
         </div>
       </div>
     </aside>
+    </>
   );
 }

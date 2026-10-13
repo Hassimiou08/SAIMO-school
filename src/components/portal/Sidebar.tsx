@@ -16,6 +16,7 @@ import { peutFaire, type Permission } from "@/server/permissions/roles";
 import { PERMISSION_PAGE_PORTAIL } from "@/lib/pages-portail";
 import { LogoMark } from "@/components/Logo";
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { useMenuMobile, classesMenu, FondMenuMobile } from "@/components/MenuMobile";
 import { useCurrentUserOptional } from "@/components/providers/UserProvider";
 
 type NavItem = { icon: LucideIcon; label: string; href: string };
@@ -80,6 +81,7 @@ const NAV_SECTIONS: { label: string | null; items: NavItem[] }[] = [
 export function Sidebar() {
   const pathname = usePathname();
   const user = useCurrentUserOptional();
+  const menu = useMenuMobile();
   const theme = user?.theme;
   const nomEtab = user?.etablissementNom;
   const logo = user?.etablissementLogo;
@@ -97,7 +99,9 @@ export function Sidebar() {
     href !== "#" && (pathname === href || (href !== "/portail" && pathname.startsWith(href)));
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col lg:flex overflow-hidden">
+    <>
+    <FondMenuMobile />
+    <aside className={`fixed inset-y-0 left-0 z-40 w-64 flex-col overflow-hidden ${classesMenu(menu.ouvert)}`}>
       <div
         className="absolute inset-0"
         style={{
@@ -122,7 +126,7 @@ export function Sidebar() {
         </div>
 
         {/* Navigation scrollable */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1 scrollbar-thin">
+        <nav onClick={menu.fermer} className="flex-1 overflow-y-auto px-3 py-4 space-y-1 scrollbar-thin">
           {sections.map((section, si) => (
             <div key={si} className={si > 0 ? "pt-2" : ""}>
               {section.label && (
@@ -184,5 +188,6 @@ export function Sidebar() {
         </div>
       </div>
     </aside>
+    </>
   );
 }

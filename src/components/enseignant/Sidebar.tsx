@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { LogoMark } from "@/components/Logo";
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { useMenuMobile, classesMenu, FondMenuMobile } from "@/components/MenuMobile";
 import { useCurrentUserOptional } from "@/components/providers/UserProvider";
 
 const NAV = [
@@ -33,13 +34,16 @@ const NAV = [
 export function EnseignantSidebar() {
   const pathname = usePathname();
   const user = useCurrentUserOptional();
+  const menu = useMenuMobile();
   const nomEtab = user?.etablissementNom;
   const logo = user?.etablissementLogo;
   const isActive = (href: string) =>
     href === "/enseignant" ? pathname === href : pathname.startsWith(href);
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col overflow-hidden bg-gradient-to-b from-blue-700 to-blue-600 lg:flex">
+    <>
+    <FondMenuMobile />
+    <aside className={`fixed inset-y-0 left-0 z-40 w-64 flex-col overflow-hidden bg-gradient-to-b from-blue-700 to-blue-600 ${classesMenu(menu.ouvert)}`}>
       <div className="flex h-16 flex-shrink-0 items-center gap-2.5 border-b border-white/15 px-6">
         {logo ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -53,7 +57,7 @@ export function EnseignantSidebar() {
         </div>
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+      <nav onClick={menu.fermer} className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
         {NAV.map((item) => {
           const active = isActive(item.href);
           return (
@@ -89,5 +93,6 @@ export function EnseignantSidebar() {
         <LogoutButton className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white/70 transition hover:bg-red-500/20 hover:text-red-200" />
       </div>
     </aside>
+    </>
   );
 }

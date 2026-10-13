@@ -11,6 +11,8 @@ import type { ClasseOption, MatiereOption } from "@/server/dal/pedagogie";
 import { useExecuterOperation, executerAction } from "@/lib/offline/client";
 import { versEntrees } from "@/lib/offline/operations";
 import { Modale, Champ, Selecteur, Err, ModalActions } from "@/components/portal/_ui";
+import { useCurrentUserOptional } from "@/components/providers/UserProvider";
+import { peutFaire } from "@/server/permissions/roles";
 
 export function NotesManager({
   evaluations,
@@ -31,6 +33,9 @@ export function NotesManager({
 }) {
   const router = useRouter();
   const executer = useExecuterOperation();
+  const role = useCurrentUserOptional()?.role;
+  const peutCreer = !!role && peutFaire(role, "evaluation:create");
+  const peutVerrouiller = !!role && peutFaire(role, "evaluation:validate");
   const [isPending, startTransition] = useTransition();
   const [modal, setModal] = useState(false);
   const [erreur, setErreur] = useState("");
@@ -85,9 +90,11 @@ export function NotesManager({
           <option value="">Toutes les périodes</option>
           {periodes.map((p) => (<option key={p.id} value={p.id}>{p.nom}</option>))}
         </select>
+        {peutCreer && (
         <button onClick={() => { setClasseModalSel(filtreClasse ?? ""); setModal(true); }} className="ml-auto inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-xs font-semibold text-white shadow-md hover:bg-blue-600 transition">
           <Plus className="h-4 w-4" /> Nouvelle évaluation
         </button>
+        )}
       </div>
 
       <table className="w-full text-left text-sm">
@@ -121,7 +128,7 @@ export function NotesManager({
                   <button onClick={() => router.push(`/portail/notes/${e.id}`)} className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800">
                     <PencilLine className="h-3.5 w-3.5" /> {e.statut === "verrouillee" ? "Consulter" : "Saisir"}
                   </button>
-                  {e.statut !== "verrouillee" && (
+                  {peutVerrouiller && e.statut !== "verrouillee" && (
                     <button onClick={() => verrouiller(e.id)} disabled={isPending} className="inline-flex items-center gap-1 text-xs font-semibold text-neutral-500 hover:text-neutral-800">
                       <Lock className="h-3.5 w-3.5" /> Verrouiller
                     </button>

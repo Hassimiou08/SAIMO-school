@@ -1,6 +1,7 @@
 import { ParentShell, AucunEnfant } from "@/components/parent/ParentShell";
 import { PaiementsParentView } from "@/components/parent/PaiementsParentView";
 import { resoudreEnfant, getPaiementsEnfant, getContexteParent } from "@/server/dal/parent";
+import { paiementEnLigneActif } from "@/server/external/paiement-en-ligne";
 
 export const metadata = { title: "Paiements — Espace Parent SAIMO" };
 
@@ -24,6 +25,7 @@ export default async function PaiementsParentPage({
         paiements={paiements}
         enfantNom={`${enfant.nomComplet} · ${enfant.classe}`}
         peutPayer={!ctx.estEleve}
+        enLigne={paiementEnLigneActif()}
       />
     </ParentShell>
   );

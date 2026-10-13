@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Save, Lock, Unlock, Loader2, CheckCircle2 } from "lucide-react";
 import type { SaisieNoteLigne } from "@/server/dal/evaluations";
 import { useCurrentUserOptional } from "@/components/providers/UserProvider";
+import { peutFaire } from "@/server/permissions/roles";
 import {
   useExecuterOperation, executerAction, toastSucces, EVENEMENT_FILE,
 } from "@/lib/offline/client";
@@ -17,7 +18,7 @@ type Etat = Record<string, { valeur: string; absent: boolean; dispense: boolean;
 export function SaisieNotesGrid({
   evaluation,
   retour = "/portail/notes",
-  peutDeverrouiller = true,
+  peutDeverrouiller: deverrouillageAutorise = true,
 }: {
   evaluation: {
     id: string;
@@ -34,7 +35,13 @@ export function SaisieNotesGrid({
 }) {
   const router = useRouter();
   const executer = useExecuterOperation();
-  const utilisateurId = useCurrentUserOptional()?.id;
+  const user = useCurrentUserOptional();
+  const utilisateurId = user?.id;
+  // Boutons affichés selon les droits réels du rôle (ex. l'enseignant saisit,
+  // le censeur verrouille, seule la direction déverrouille).
+  const peutVerrouiller = !!user && peutFaire(user.role, "evaluation:validate");
+  const peutDeverrouiller =
+    deverrouillageAutorise && !!user && peutFaire(user.role, "note:corriger");
   const [isPending, startTransition] = useTransition();
   const [msg, setMsg] = useState<{ type: "ok" | "err"; texte: string } | null>(null);
   const [etat, setEtat] = useState<Etat>(() =>
@@ -215,10 +222,17 @@ export function SaisieNotesGrid({
       )}
 
       {!evaluation.verrouillee ? (
-        <div className="mt-5 flex items-center justify-end gap-3">
+        <div className="mt-5 flex flex-wrap items-center justify-end gap-3">
+          {!peutVerrouiller && (
+            <p className="mr-auto text-xs text-neutral-500">
+              Une fois les notes complètes, prévenez l&rsquo;administration : elle verrouille l&rsquo;évaluation.
+            </p>
+          )}
+          {peutVerrouiller && (
           <button onClick={verrouiller} disabled={isPending} className="inline-flex items-center gap-2 rounded-full border border-neutral-300 px-5 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-60">
             <Lock className="h-4 w-4" /> Verrouiller l&rsquo;évaluation
           </button>
+          )}
           <button onClick={enregistrer} disabled={isPending} className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-60">
             {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Enregistrer
           </button>

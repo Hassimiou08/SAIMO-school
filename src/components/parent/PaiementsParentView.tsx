@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "@/lib/offline/router";
 import { toast } from "sonner";
 import {
-  CheckCircle, AlertTriangle, X, Smartphone, Loader2,
+  CheckCircle, AlertTriangle, X, Smartphone, Loader2, Info,
 } from "lucide-react";
 import { formatGNF } from "@/lib/format";
 import { actionPayerFraisEnfant } from "@/server/actions/parent";
@@ -15,12 +15,17 @@ type Etape = "select" | "method" | "phone" | "processing" | "success";
 export function PaiementsParentView({
   paiements,
   enfantNom,
-  peutPayer,
+  peutPayer: estParent,
+  enLigne,
 }: {
   paiements: PaiementParentLigne[];
   enfantNom: string;
+  /** Parent (l'élève ne paie pas). */
   peutPayer: boolean;
+  /** Paiement en ligne branché sur un agrégateur réel. */
+  enLigne: boolean;
 }) {
+  const peutPayer = estParent && enLigne;
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -82,6 +87,16 @@ export function PaiementsParentView({
           </button>
         )}
       </div>
+
+      {estParent && !enLigne && (
+        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+          <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
+          <p>
+            Le paiement en ligne sera bientôt disponible. En attendant, réglez auprès de la
+            comptabilité de l&rsquo;école : votre reçu apparaîtra ici dès l&rsquo;encaissement.
+          </p>
+        </div>
+      )}
 
       <div className="mb-8 grid grid-cols-3 gap-4">
         <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">

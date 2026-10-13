@@ -7,6 +7,7 @@ import {
   libelleRole,
   initiales,
 } from "@/components/providers/UserProvider";
+import { BoutonMenuMobile } from "@/components/MenuMobile";
 
 export function ParentTopbar() {
   const user = useCurrentUserOptional();
@@ -16,7 +17,10 @@ export function ParentTopbar() {
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-neutral-200 bg-white/90 px-6 backdrop-blur-md lg:pl-10">
-      <div className="text-sm font-semibold text-neutral-400">SAIMO École</div>
+      <div className="flex items-center gap-3">
+        <BoutonMenuMobile />
+        <div className="text-sm font-semibold text-neutral-400">SAIMO École</div>
+      </div>
 
       <div className="ml-auto flex items-center gap-3">
         <Link

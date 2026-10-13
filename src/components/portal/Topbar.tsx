@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Search, ChevronDown, Menu, Eye } from "lucide-react";
+import { Search, ChevronDown, Eye } from "lucide-react";
+import { BoutonMenuMobile } from "@/components/MenuMobile";
 import { estLectureSeule } from "@/server/permissions/roles";
 import {
   useCurrentUserOptional,
@@ -19,9 +20,7 @@ export function Topbar() {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-neutral-200 bg-white/95 px-6 backdrop-blur-sm lg:px-10">
       {/* Menu mobile */}
-      <button className="lg:hidden flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-200 text-neutral-600 hover:bg-neutral-50">
-        <Menu className="h-4 w-4" />
-      </button>
+      <BoutonMenuMobile />
 
       {/* Année scolaire */}
       <div className="hidden items-center gap-2 rounded-full bg-blue-50 border border-blue-200 px-4 py-2 text-xs font-semibold text-blue-600 sm:flex">

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useEnfants } from "@/components/parent/EnfantsProvider";
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { useMenuMobile, classesMenu, FondMenuMobile } from "@/components/MenuMobile";
 import { useCurrentUserOptional } from "@/components/providers/UserProvider";
 
 const NAV = [
@@ -27,6 +28,7 @@ export function ParentSidebar() {
   const searchParams = useSearchParams();
   const { enfants, estEleve } = useEnfants();
   const user = useCurrentUserOptional();
+  const menu = useMenuMobile();
   const nomEtab = user?.etablissementNom;
   const logo = user?.etablissementLogo;
 
@@ -41,7 +43,9 @@ export function ParentSidebar() {
   const nav = estEleve ? NAV.filter((n) => n.href !== "/parent/paiements") : NAV;
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col overflow-hidden lg:flex">
+    <>
+    <FondMenuMobile />
+    <aside className={`fixed inset-y-0 left-0 z-40 w-64 flex-col overflow-hidden ${classesMenu(menu.ouvert)}`}>
       <div className="absolute inset-0 bg-gradient-to-b from-emerald-700 to-teal-800" />
       <div className="absolute inset-0 opacity-[0.07] bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PHBhdGggZD0iTTQwIDQwVjBIMHY0MHoiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNMzkgNDBWMGgxdjQwek0wIDM5aDQwdjFIMHoiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMSkiLz48L3N2Zz4=')]" />
 
@@ -93,7 +97,7 @@ export function ParentSidebar() {
           </div>
         )}
 
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+        <nav onClick={menu.fermer} className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
           {nav.map((item) => {
             const active = isActive(item.href);
             return (
@@ -149,5 +153,6 @@ export function ParentSidebar() {
         </div>
       </div>
     </aside>
+    </>
   );
 }
