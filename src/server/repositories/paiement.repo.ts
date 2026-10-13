@@ -1,4 +1,34 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+
+/**
+ * Recalcule le montant payé et le statut d'une ligne de frais à partir des
+ * paiements valides ET des remises. Seule source de vérité du statut :
+ * appelée après chaque paiement, annulation ou remise.
+ */
+export async function recalculerFraisEleve(
+  tx: Prisma.TransactionClient,
+  fraisEleveId: string,
+) {
+  const [paiements, remises, frais] = await Promise.all([
+    tx.paiement.aggregate({
+      where: { fraisEleveId, statut: "valide" },
+      _sum: { montant: true },
+    }),
+    tx.remise.aggregate({ where: { fraisEleveId }, _sum: { montant: true } }),
+    tx.fraisEleve.findUnique({ where: { id: fraisEleveId }, select: { montantDu: true, statut: true } }),
+  ]);
+  if (!frais || frais.statut === "annule") return;
+
+  const montantPaye = Number(paiements._sum.montant ?? 0);
+  const du = Number(frais.montantDu) - Number(remises._sum.montant ?? 0);
+  const statut = montantPaye >= du ? "solde" : montantPaye > 0 ? "partiel" : "impaye";
+
+  await tx.fraisEleve.update({
+    where: { id: fraisEleveId },
+    data: { montantPaye, statut },
+  });
+}
 
 export async function trouverFraisEleve(inscriptionId: string) {
   return prisma.fraisEleve.findMany({
@@ -68,22 +98,7 @@ export async function creerPaiement(data: {
       },
     });
 
-    // Recalculer le montant payé sur le fraisEleve
-    const tousLespaiements = await tx.paiement.aggregate({
-      where: { fraisEleveId: data.fraisEleveId, statut: "valide" },
-      _sum: { montant: true },
-    });
-
-    const frais = await tx.fraisEleve.findUnique({ where: { id: data.fraisEleveId } });
-    const montantPaye = Number(tousLespaiements._sum.montant ?? 0);
-    const montantDu = Number(frais?.montantDu ?? 0);
-    const statut =
-      montantPaye >= montantDu ? "solde" : montantPaye > 0 ? "partiel" : "impaye";
-
-    await tx.fraisEleve.update({
-      where: { id: data.fraisEleveId },
-      data: { montantPaye, statut },
-    });
+    await recalculerFraisEleve(tx, data.fraisEleveId);
 
     return paiement;
   });
@@ -106,22 +121,7 @@ export async function annulerPaiement(
       },
     });
 
-    // Recalcul du montant payé
-    const tousLesPaiements = await tx.paiement.aggregate({
-      where: { fraisEleveId: paiement.fraisEleveId, statut: "valide" },
-      _sum: { montant: true },
-    });
-
-    const frais = await tx.fraisEleve.findUnique({ where: { id: paiement.fraisEleveId } });
-    const montantPaye = Number(tousLesPaiements._sum.montant ?? 0);
-    const montantDu = Number(frais?.montantDu ?? 0);
-    const statut =
-      montantPaye >= montantDu ? "solde" : montantPaye > 0 ? "partiel" : "impaye";
-
-    await tx.fraisEleve.update({
-      where: { id: paiement.fraisEleveId },
-      data: { montantPaye, statut },
-    });
+    await recalculerFraisEleve(tx, paiement.fraisEleveId);
 
     return paiement;
   });

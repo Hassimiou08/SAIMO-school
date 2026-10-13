@@ -4,6 +4,7 @@ import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { requireContext } from "@/server/context";
 import { formatGNF } from "@/lib/format";
+import { peutFaire } from "@/server/permissions/roles";
 
 export type NotifTon = "info" | "attention" | "urgent";
 
@@ -27,9 +28,9 @@ export interface NotificationsPortail {
  * situation sous-jacente est réglée).
  */
 export const getNotificationsPortail = cache(async (): Promise<NotificationsPortail> => {
-  const { etablissementId, anneeScolaireId } = await requireContext();
+  const { etablissementId, anneeScolaireId, role } = await requireContext();
 
-  const [preInscriptions, absencesNonJustifiees, bulletinsAValider, fraisImpayes] =
+  const [preInscriptions, absencesNonJustifiees, bulletinsAValider, fraisImpayes, paiementsAVerifier] =
     await Promise.all([
       prisma.preInscription.count({
         where: { etablissementId, statut: "nouvelle" },
@@ -50,12 +51,20 @@ export const getNotificationsPortail = cache(async (): Promise<NotificationsPort
           echeance: { anneeScolaireId, dateEcheance: { lt: new Date() } },
           inscription: { etablissementId, anneeScolaireId, statut: "active" },
         },
-        select: { montantDu: true, montantPaye: true },
+        select: { montantDu: true, montantPaye: true, remises: { select: { montant: true } } },
       }),
+      peutFaire(role, "rapport:financier")
+        ? prisma.transactionEnLigne.count({ where: { etablissementId, statut: "a_verifier" } })
+        : Promise.resolve(0),
     ]);
 
   const soldeImpaye = fraisImpayes.reduce(
-    (t, f) => t + (Number(f.montantDu) - Number(f.montantPaye)),
+    (t, f) =>
+      t +
+      Math.max(
+        0,
+        Number(f.montantDu) - Number(f.montantPaye) - f.remises.reduce((s, r) => s + Number(r.montant), 0),
+      ),
     0,
   );
 
@@ -91,6 +100,17 @@ export const getNotificationsPortail = cache(async (): Promise<NotificationsPort
       detail: "Prêts pour publication aux familles",
       href: "/portail/bulletins",
       compteur: bulletinsAValider,
+    });
+  }
+
+  if (paiementsAVerifier > 0) {
+    items.push({
+      id: "paiements-en-ligne",
+      ton: "urgent",
+      titre: `${paiementsAVerifier} paiement${paiementsAVerifier > 1 ? "s" : ""} en ligne à vérifier`,
+      detail: "Montant reçu mais non encaissé automatiquement",
+      href: "/compta/recettes",
+      compteur: paiementsAVerifier,
     });
   }
 

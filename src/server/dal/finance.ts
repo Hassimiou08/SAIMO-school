@@ -4,6 +4,7 @@ import { cache } from "react";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireContext, requirePermission } from "@/server/context";
+import { resoudreTransactionsEnAttente } from "@/server/services/paiement-en-ligne.service";
 import { formatDateCourte, formatDateLongue } from "@/lib/format";
 
 export interface FraisRowDTO {
@@ -29,6 +30,8 @@ export async function listerFrais(params: {
 }): Promise<FraisRowDTO[]> {
   const { etablissementId, anneeScolaireId, role } = await requireContext();
   requirePermission(role, "paiement:view");
+  // Paiements en ligne validés par un parent qui a quitté la page avant la fin.
+  await resoudreTransactionsEnAttente({ etablissementId });
 
   const frais = await prisma.fraisEleve.findMany({
     where: {

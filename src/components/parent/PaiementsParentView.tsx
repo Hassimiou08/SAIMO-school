@@ -1,40 +1,56 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "@/lib/offline/router";
 import { toast } from "sonner";
 import {
-  CheckCircle, AlertTriangle, X, Smartphone, Loader2, Info,
+  CheckCircle, AlertTriangle, X, Smartphone, Loader2, XCircle,
 } from "lucide-react";
 import { formatGNF } from "@/lib/format";
-import { actionPayerFraisEnfant } from "@/server/actions/parent";
+import { actionInitierPaiementEnLigne, actionSuivrePaiementEnLigne } from "@/server/actions/parent";
 import type { PaiementParentLigne } from "@/server/dal/parent";
 
-type Etape = "select" | "method" | "phone" | "processing" | "success";
+type Etape = "select" | "method" | "phone" | "processing" | "success" | "echec";
+type Methode = "orange" | "mtn";
+
+const LIBELLE_METHODE: Record<Methode, string> = {
+  orange: "Orange Money",
+  mtn: "MTN Mobile Money",
+};
+
+const METHODES: { k: Methode; cls: string; badge: string; t: string }[] = [
+  { k: "orange", cls: "border-orange-200 bg-orange-50 hover:bg-orange-100", badge: "bg-orange-500 text-white", t: "OM" },
+  { k: "mtn", cls: "border-yellow-200 bg-yellow-50 hover:bg-yellow-100", badge: "bg-yellow-500 text-neutral-900", t: "MTN" },
+];
+
+/** Intervalle de vérification auprès de l'opérateur pendant l'attente. */
+const INTERVALLE_SUIVI_MS = 2500;
 
 export function PaiementsParentView({
   paiements,
   enfantNom,
-  peutPayer: estParent,
-  enLigne,
+  peutPayer,
+  simulation,
 }: {
   paiements: PaiementParentLigne[];
   enfantNom: string;
   /** Parent (l'élève ne paie pas). */
   peutPayer: boolean;
-  /** Paiement en ligne branché sur un agrégateur réel. */
-  enLigne: boolean;
+  /** Aucune API opérateur branchée : paiement simulé. */
+  simulation: boolean;
 }) {
-  const peutPayer = estParent && enLigne;
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   const [open, setOpen] = useState(false);
   const [facture, setFacture] = useState<PaiementParentLigne | null>(null);
   const [etape, setEtape] = useState<Etape>("select");
-  const [methode, setMethode] = useState<"orange" | "mtn" | "card" | null>(null);
+  const [methode, setMethode] = useState<Methode | null>(null);
   const [numero, setNumero] = useState("");
   const [recu, setRecu] = useState<string | null>(null);
+  const [motifEchec, setMotifEchec] = useState<string | null>(null);
+  const [transactionId, setTransactionId] = useState<string | null>(null);
+  const suiviEnCours = useRef(false);
 
   const totalDu = paiements.reduce((a, p) => a + p.montantDu, 0);
   const totalPaye = paiements.reduce((a, p) => a + p.montantPaye, 0);
@@ -48,26 +64,64 @@ export function PaiementsParentView({
     setMethode(null);
     setNumero("");
     setRecu(null);
+    setMotifEchec(null);
+    setTransactionId(null);
     setOpen(true);
   };
 
+  const fermer = () => {
+    if (etape === "processing") {
+      toast.info("Paiement en attente de validation : la page se mettra à jour dès sa confirmation.");
+    }
+    setTransactionId(null);
+    setOpen(false);
+  };
+
+  // Attente de la validation sur le téléphone : on interroge l'opérateur
+  // jusqu'au résultat (réussi, refusé ou expiré).
+  useEffect(() => {
+    if (!transactionId) return;
+    const id = setInterval(async () => {
+      if (suiviEnCours.current) return;
+      suiviEnCours.current = true;
+      try {
+        const r = await actionSuivrePaiementEnLigne(transactionId);
+        if (!r.succes || r.data.statut === "en_attente") return;
+        const e = r.data;
+        setTransactionId(null);
+        if (e.statut === "reussie") {
+          setRecu(e.numeroRecu);
+          setEtape("success");
+        } else {
+          setMotifEchec(
+            e.statut === "a_verifier"
+              ? "Paiement reçu, en cours de vérification par la comptabilité de l'école."
+              : (e.motif ?? "Le paiement n'a pas abouti."),
+          );
+          setEtape("echec");
+        }
+        router.refresh();
+      } finally {
+        suiviEnCours.current = false;
+      }
+    }, INTERVALLE_SUIVI_MS);
+    return () => clearInterval(id);
+  }, [transactionId, router]);
+
   const payer = () => {
-    if (!facture) return;
-    setEtape("processing");
+    if (!facture || !methode) return;
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      toast.error("Le paiement en ligne nécessite une connexion Internet.");
+      return;
+    }
     startTransition(async () => {
-      const r = await actionPayerFraisEnfant(
-        facture.id,
-        facture.solde,
-        methode ?? "orange",
-      );
+      const r = await actionInitierPaiementEnLigne(facture.id, methode, numero);
       if (!r.succes) {
         toast.error(r.erreur);
-        setEtape("phone");
         return;
       }
-      setRecu(r.data.numeroRecu);
-      setEtape("success");
-      router.refresh();
+      setEtape("processing");
+      setTransactionId(r.data.id);
     });
   };
 
@@ -87,16 +141,6 @@ export function PaiementsParentView({
           </button>
         )}
       </div>
-
-      {estParent && !enLigne && (
-        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
-          <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
-          <p>
-            Le paiement en ligne sera bientôt disponible. En attendant, réglez auprès de la
-            comptabilité de l&rsquo;école : votre reçu apparaîtra ici dès l&rsquo;encaissement.
-          </p>
-        </div>
-      )}
 
       <div className="mb-8 grid grid-cols-3 gap-4">
         <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
@@ -201,16 +245,14 @@ export function PaiementsParentView({
           <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-neutral-100 bg-emerald-50/50 px-6 py-4">
               <h2 className="font-display font-bold text-neutral-900">
-                {etape === "success" ? "Paiement réussi" : "Paiement en ligne"}
+                {etape === "success" ? "Paiement réussi" : etape === "echec" ? "Paiement non abouti" : "Paiement en ligne"}
               </h2>
-              {etape !== "processing" && (
-                <button
-                  onClick={() => setOpen(false)}
-                  className="rounded-full p-2 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              )}
+              <button
+                onClick={fermer}
+                className="rounded-full p-2 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
 
             <div className="p-6">
@@ -251,15 +293,11 @@ export function PaiementsParentView({
                     </p>
                   </div>
                   <div className="grid gap-3">
-                    {[
-                      { k: "orange", l: "Orange Money", cls: "border-orange-200 bg-orange-50 hover:bg-orange-100", badge: "bg-orange-500 text-white", t: "OM" },
-                      { k: "mtn", l: "MTN Mobile Money", cls: "border-yellow-200 bg-yellow-50 hover:bg-yellow-100", badge: "bg-yellow-500 text-neutral-900", t: "MTN" },
-                      { k: "card", l: "Carte bancaire", cls: "border-blue-200 bg-blue-50 hover:bg-blue-100", badge: "bg-blue-600 text-white", t: "CB" },
-                    ].map((m) => (
+                    {METHODES.map((m) => (
                       <button
                         key={m.k}
                         onClick={() => {
-                          setMethode(m.k as "orange" | "mtn" | "card");
+                          setMethode(m.k);
                           setEtape("phone");
                         }}
                         className={`flex items-center gap-4 rounded-xl border p-4 text-left transition ${m.cls}`}
@@ -267,7 +305,7 @@ export function PaiementsParentView({
                         <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${m.badge}`}>
                           {m.t}
                         </div>
-                        <p className="font-bold text-neutral-900">{m.l}</p>
+                        <p className="font-bold text-neutral-900">{LIBELLE_METHODE[m.k]}</p>
                       </button>
                     ))}
                   </div>
@@ -280,28 +318,30 @@ export function PaiementsParentView({
                 </div>
               )}
 
-              {etape === "phone" && facture && (
+              {etape === "phone" && facture && methode && (
                 <div className="space-y-6">
                   <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-4 text-center">
                     <p className="text-xs text-neutral-500">
                       Vous allez payer {formatGNF(facture.solde)} via
                     </p>
-                    <p className="mt-1 font-bold text-neutral-900">
-                      {methode === "orange" ? "Orange Money" : methode === "mtn" ? "MTN Mobile Money" : "Carte bancaire"}
-                    </p>
+                    <p className="mt-1 font-bold text-neutral-900">{LIBELLE_METHODE[methode]}</p>
                   </div>
                   <div>
                     <label className="mb-2 block text-sm font-semibold text-neutral-900">
-                      {methode === "card" ? "Numéro de carte" : "Numéro de téléphone"}
+                      Numéro {LIBELLE_METHODE[methode]}
                     </label>
                     <input
-                      type="text"
+                      type="tel"
+                      inputMode="tel"
                       value={numero}
                       onChange={(e) => setNumero(e.target.value)}
-                      placeholder={methode === "card" ? "XXXX XXXX XXXX XXXX" : "Ex : 620 00 00 00"}
+                      placeholder="Ex : 620 00 00 00"
                       className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                       autoFocus
                     />
+                    <p className="mt-2 text-xs text-neutral-500">
+                      Une demande de paiement sera envoyée sur ce numéro : validez-la avec votre code secret.
+                    </p>
                   </div>
                   <div className="flex gap-3">
                     <button
@@ -312,9 +352,10 @@ export function PaiementsParentView({
                     </button>
                     <button
                       onClick={payer}
-                      disabled={numero.length < 5 || isPending}
-                      className="w-2/3 rounded-xl bg-emerald-600 py-3 font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                      disabled={numero.replace(/\D/g, "").length < 9 || isPending}
+                      className="inline-flex w-2/3 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50"
                     >
+                      {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                       Confirmer le paiement
                     </button>
                   </div>
@@ -324,9 +365,10 @@ export function PaiementsParentView({
               {etape === "processing" && (
                 <div className="flex flex-col items-center justify-center space-y-4 py-10">
                   <Loader2 className="h-12 w-12 animate-spin text-emerald-600" />
-                  <p className="font-bold text-neutral-900">Traitement en cours…</p>
+                  <p className="font-bold text-neutral-900">Validez sur votre téléphone</p>
                   <p className="text-center text-sm text-neutral-500">
-                    Validez la transaction sur votre téléphone si nécessaire.
+                    Une demande de {facture ? formatGNF(facture.solde) : ""} a été envoyée au {numero}.
+                    Composez votre code secret {methode ? LIBELLE_METHODE[methode] : ""} pour confirmer.
                   </p>
                 </div>
               )}
@@ -341,12 +383,41 @@ export function PaiementsParentView({
                     Reçu n° <strong>{recu}</strong> — un email de confirmation vous a été envoyé.
                   </p>
                   <button
-                    onClick={() => setOpen(false)}
+                    onClick={fermer}
                     className="w-full rounded-xl bg-emerald-600 py-3 font-bold text-white transition hover:bg-emerald-700"
                   >
                     Terminer
                   </button>
                 </div>
+              )}
+
+              {etape === "echec" && (
+                <div className="flex flex-col items-center justify-center space-y-4 py-6">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-100">
+                    <XCircle className="h-10 w-10 text-red-600" />
+                  </div>
+                  <p className="px-4 text-center text-sm text-neutral-600">{motifEchec}</p>
+                  <div className="flex w-full gap-3">
+                    <button
+                      onClick={fermer}
+                      className="w-1/3 rounded-xl border border-neutral-200 py-3 font-semibold text-neutral-700 hover:bg-neutral-50"
+                    >
+                      Fermer
+                    </button>
+                    <button
+                      onClick={() => setEtape("phone")}
+                      className="w-2/3 rounded-xl bg-emerald-600 py-3 font-bold text-white transition hover:bg-emerald-700"
+                    >
+                      Réessayer
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {simulation && etape !== "success" && (
+                <p className="mt-6 border-t border-neutral-100 pt-3 text-center text-[11px] text-neutral-400">
+                  Mode démonstration : aucun montant n&rsquo;est réellement débité.
+                </p>
               )}
             </div>
           </div>

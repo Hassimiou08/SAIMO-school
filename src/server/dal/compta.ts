@@ -3,6 +3,7 @@ import "server-only";
 import { prisma } from "@/lib/prisma";
 import { requireContext, requirePermission } from "@/server/context";
 import { formatDateCourte } from "@/lib/format";
+import { resoudreTransactionsEnAttente } from "@/server/services/paiement-en-ligne.service";
 
 // ─────────────────────────────────────────────────────────────
 // Helpers dates
@@ -61,6 +62,7 @@ export interface TableauBordCompta {
 export async function getTableauBordCompta(): Promise<TableauBordCompta> {
   const { etablissementId, anneeScolaireId, role } = await requireContext();
   requirePermission(role, "rapport:financier");
+  await resoudreTransactionsEnAttente({ etablissementId });
 
   const now = new Date();
   const debutFenetre = debutDeMois(
@@ -567,4 +569,55 @@ export async function getSyntheseRapports(): Promise<SyntheseRapports> {
     resultatAnnee: recettesAnnee - depensesAnnee,
     anneeLibelle: annee?.libelle ?? "",
   };
+}
+
+// ─── Paiements en ligne à vérifier ─────────────────────────
+
+export interface PaiementEnLigneAVerifier {
+  id: string;
+  eleve: string;
+  classe: string;
+  echeance: string;
+  montant: number;
+  operateur: string;
+  telephone: string;
+  reference: string;
+  motif: string;
+  date: string;
+}
+
+/**
+ * Paiements mobiles confirmés par l'opérateur mais non encaissés
+ * automatiquement (ex. échéance soldée entre-temps à la caisse) : l'argent
+ * est reçu, la comptabilité doit rembourser ou réaffecter.
+ */
+export async function listerPaiementsEnLigneAVerifier(): Promise<PaiementEnLigneAVerifier[]> {
+  const { etablissementId, role } = await requireContext();
+  requirePermission(role, "paiement:view");
+
+  const lignes = await prisma.transactionEnLigne.findMany({
+    where: { etablissementId, statut: "a_verifier" },
+    include: {
+      fraisEleve: {
+        include: {
+          echeance: { include: { typeFrais: true } },
+          inscription: { include: { eleve: true, classe: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return lignes.map((t) => ({
+    id: t.id,
+    eleve: `${t.fraisEleve.inscription.eleve.prenom} ${t.fraisEleve.inscription.eleve.nom}`,
+    classe: t.fraisEleve.inscription.classe.nom,
+    echeance: t.fraisEleve.echeance.libelle ?? t.fraisEleve.echeance.typeFrais.nom,
+    montant: Number(t.montant),
+    operateur: t.operateur === "orange" ? "Orange Money" : t.operateur === "mtn" ? "MTN Mobile Money" : t.operateur,
+    telephone: t.telephone,
+    reference: t.referenceOperateur,
+    motif: t.motifEchec ?? "",
+    date: formatDateCourte(t.createdAt),
+  }));
 }

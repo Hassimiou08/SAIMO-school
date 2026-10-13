@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireContext, requirePermission } from "@/server/context";
 import { audit, AuditAction } from "@/server/logs/audit";
 import { annulerUnPaiement } from "@/server/services/paiement.service";
+import { recalculerFraisEleve } from "@/server/repositories/paiement.repo";
 import { encaisserDepuisFormulaire } from "@/server/services/encaissement.service";
 import type { ActionResult } from "./eleves";
 
@@ -63,8 +64,12 @@ export async function actionCreerRemise(formData: FormData): Promise<ActionResul
     });
     if (!frais) return { succes: false, erreur: "Frais introuvable" };
 
-    await prisma.remise.create({
-      data: { fraisEleveId, montant, motif, accordeParId: ctx.utilisateurId },
+    // La remise réduit le dû : le statut (soldé, partiel…) est recalculé.
+    await prisma.$transaction(async (tx) => {
+      await tx.remise.create({
+        data: { fraisEleveId, montant, motif, accordeParId: ctx.utilisateurId },
+      });
+      await recalculerFraisEleve(tx, fraisEleveId);
     });
     await audit({
       utilisateurId: ctx.utilisateurId,

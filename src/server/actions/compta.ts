@@ -570,3 +570,50 @@ export async function actionRelancerImpayes(
     return { succes: false, erreur: msg(e) };
   }
 }
+
+// ─────────────────────────────────────────────────────────────
+// Paiements en ligne à vérifier
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Clôt un paiement en ligne « à vérifier » une fois traité hors application
+ * (remboursement au parent ou encaissement manuel sur une autre échéance).
+ */
+export async function actionCloreTransactionEnLigne(
+  transactionId: string,
+  note: string,
+): Promise<ActionResult> {
+  try {
+    const ctx = await requireContext();
+    requirePermission(ctx.role, "paiement:enregistrer");
+    const texte = note.trim();
+    if (!texte) return { succes: false, erreur: "Indiquez ce qui a été fait (remboursement, réaffectation…)." };
+
+    const t = await prisma.transactionEnLigne.findFirst({
+      where: { id: transactionId, etablissementId: ctx.etablissementId, statut: "a_verifier" },
+    });
+    if (!t) return { succes: false, erreur: "Paiement introuvable ou déjà traité." };
+
+    await prisma.transactionEnLigne.update({
+      where: { id: t.id },
+      data: {
+        statut: "traitee",
+        motifEchec: `${t.motifEchec ?? ""}\nTraité : ${texte}`.trim(),
+        termineeLe: new Date(),
+      },
+    });
+    await audit({
+      utilisateurId: ctx.utilisateurId,
+      etablissementId: ctx.etablissementId,
+      action: AuditAction.UPDATE,
+      entite: "TransactionEnLigne",
+      entiteId: t.id,
+      avant: { statut: "a_verifier" },
+      apres: { statut: "traitee", note: texte },
+    });
+    revalidatePath("/compta/recettes");
+    return { succes: true, data: undefined };
+  } catch (e) {
+    return { succes: false, erreur: msg(e) };
+  }
+}

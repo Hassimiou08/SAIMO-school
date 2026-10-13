@@ -32,14 +32,16 @@ export interface EnregistrerPaiementInput {
 export async function enregistrerPaiement(input: EnregistrerPaiementInput) {
   const fraisEleve = await prisma.fraisEleve.findUnique({
     where: { id: input.fraisEleveId },
-    include: { inscription: { include: { eleve: true } } },
+    include: { inscription: { include: { eleve: true } }, remises: true },
   });
 
   if (!fraisEleve) throw new Error("Frais introuvable");
   if (fraisEleve.statut === "annule") throw new Error("Ces frais sont annulés");
 
+  // Même calcul que les écrans : dû − remises − déjà payé.
+  const remises = fraisEleve.remises.reduce((s, r) => s + Number(r.montant), 0);
   const solde =
-    Number(fraisEleve.montantDu) - Number(fraisEleve.montantPaye);
+    Number(fraisEleve.montantDu) - remises - Number(fraisEleve.montantPaye);
   if (input.montant <= 0) throw new Error("Le montant doit être supérieur à 0");
   if (input.montant > solde) {
     throw new Error(
