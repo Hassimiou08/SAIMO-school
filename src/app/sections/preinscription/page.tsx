@@ -1,29 +1,19 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { FormulairePreinscription } from "@/components/ecole/FormulairePreinscription";
 import {
   ShieldCheck,
   Clock,
   Users,
   Wallet,
   Sparkles,
-  Camera,
-  Utensils,
-  Bus,
-  Shirt,
   Medal,
-  Download,
-  UploadCloud,
-  ChevronRight,
-  ChevronLeft,
   ArrowRight,
-  CheckCircle2,
-  FileText,
-  User,
   Globe,
   Microscope,
   Palette,
@@ -34,82 +24,8 @@ if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
-type Config = {
-  etablissementId: string;
-  etablissementNom: string;
-  anneeScolaireId: string;
-  anneeLibelle: string;
-  niveaux: { id: string; nom: string; cycle: string }[];
-};
-
-const CHAMP =
-  "w-full p-3 bg-paper-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-blue-600 outline-none transition-all text-sm";
-
 export default function PreinscriptionPage() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [step, setStep] = useState(1);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [config, setConfig] = useState<Config | null>(null);
-  const [reference, setReference] = useState<string | null>(null);
-  const [envoi, setEnvoi] = useState(false);
-  const [erreur, setErreur] = useState("");
-  const [form, setForm] = useState({
-    prenomEleve: "", nomEleve: "", dateNaissance: "", sexe: "", niveauId: "",
-    prenomTuteur: "", nomTuteur: "", telephone: "", email: "", message: "",
-  });
-  const maj = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
-
-  useEffect(() => {
-    fetch("/api/pre-inscriptions")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((c) => c && setConfig(c))
-      .catch(() => {});
-  }, []);
-
-  const handleSubmit = async () => {
-    setErreur("");
-    if (!config) { setErreur("Configuration indisponible, réessayez plus tard."); return; }
-    if (!form.prenomEleve.trim() || !form.nomEleve.trim() || !form.telephone.trim()) {
-      setErreur("Prénom, nom de l'élève et téléphone du contact sont obligatoires.");
-      setStep(1);
-      return;
-    }
-    setEnvoi(true);
-    try {
-      const res = await fetch("/api/pre-inscriptions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          etablissementId: config.etablissementId,
-          anneeScolaireId: config.anneeScolaireId,
-          niveauId: form.niveauId || undefined,
-          niveauSouhaite: config.niveaux.find((n) => n.id === form.niveauId)?.nom,
-          prenomEleve: form.prenomEleve,
-          nomEleve: form.nomEleve,
-          dateNaissance: form.dateNaissance || undefined,
-          sexe: form.sexe || undefined,
-          prenomTuteur: form.prenomTuteur || undefined,
-          nomTuteur: form.nomTuteur || undefined,
-          telephone: form.telephone,
-          email: form.email || undefined,
-          message: form.message || undefined,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setErreur(data.erreur ?? "Échec de l'envoi."); return; }
-      setReference(data.reference);
-      setIsSubmitted(true);
-      window.scrollTo({ top: 300, behavior: "smooth" });
-      setTimeout(() => {
-        gsap.fromTo(".success-el", { scale: 0.8, opacity: 0, y: 20 }, { scale: 1, opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "back.out(1.5)" });
-      }, 100);
-    } catch {
-      setErreur("Erreur réseau. Réessayez.");
-    } finally {
-      setEnvoi(false);
-    }
-  };
-
   useEffect(() => {
     const ctx = gsap.context(() => {
       // Hero Animation
@@ -174,23 +90,6 @@ export default function PreinscriptionPage() {
     return () => ctx.revert();
   }, []);
 
-  const handleStepChange = (newStep: number) => {
-    setStep(newStep);
-    window.scrollTo({ top: 300, behavior: "smooth" });
-    
-    // Animate content change
-    gsap.fromTo(
-      ".step-content",
-      { opacity: 0, x: newStep > step ? 30 : -30 },
-      { opacity: 1, x: 0, duration: 0.5, ease: "power2.out" }
-    );
-    
-    // Rafraîchir ScrollTrigger car la hauteur du formulaire change
-    setTimeout(() => {
-      ScrollTrigger.refresh();
-    }, 500);
-  };
-
   return (
     <div ref={containerRef} className="min-h-screen bg-paper-100 flex flex-col font-sans">
       <Navbar />
@@ -249,154 +148,7 @@ export default function PreinscriptionPage() {
         <section className="px-6 pb-24 relative z-20">
           <div className="form-container max-w-6xl mx-auto bg-white rounded-[2rem] shadow-[0_20px_50px_-20px_rgba(15,42,74,0.1)] border border-neutral-100 overflow-hidden">
             
-            {isSubmitted ? (
-              // ÉCRAN DE SUCCÈS
-              <div className="p-12 md:p-24 text-center flex flex-col items-center justify-center min-h-[500px]">
-                <div className="success-el h-24 w-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-green-600/20">
-                  <CheckCircle2 className="h-12 w-12" />
-                </div>
-                <h2 className="success-el font-display text-4xl font-bold text-navy-900 mb-4">Demande envoyée avec succès !</h2>
-                <p className="success-el text-slate-600 text-lg max-w-xl mx-auto mb-4 leading-relaxed">
-                  Nous avons bien reçu votre demande de pré-inscription pour <strong className="text-navy-900">{form.prenomEleve} {form.nomEleve}</strong>.
-                  Notre équipe d&apos;admission va examiner votre dossier et vous contactera.
-                </p>
-                {reference && (
-                  <p className="success-el mb-10 rounded-xl border border-blue-100 bg-blue-50 px-5 py-3 text-sm text-blue-800">
-                    Référence : <strong className="font-mono">{reference}</strong> — conservez-la pour tout suivi.
-                  </p>
-                )}
-                <div className="success-el flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-                  <a href="/" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-8 rounded-xl transition-all shadow-md shadow-blue-600/30 hover:scale-[1.02] text-center">
-                    Retour à l&apos;accueil
-                  </a>
-                </div>
-              </div>
-            ) : (
-              // FORMULAIRE CÔTE À CÔTE
-              <div className="flex flex-col md:flex-row">
-                {/* LEFT SIDE: VERTICAL STEPPER */}
-                <div className="w-full md:w-1/3 bg-slate-50 p-8 md:p-10 border-b md:border-b-0 md:border-r border-neutral-200">
-              <h3 className="font-display font-bold text-xl text-navy-900 mb-10">Votre progression</h3>
-              
-              <div className="space-y-10 relative">
-                {/* Vertical Line */}
-                <div className="absolute left-[22px] top-[40px] bottom-[40px] w-0.5 bg-neutral-200 z-0 hidden md:block" />
-
-                {/* Step 1 */}
-                <div onClick={() => handleStepChange(1)} className={`relative z-10 flex items-start gap-4 cursor-pointer transition-all duration-300 ${step === 1 ? 'opacity-100 scale-105' : 'opacity-60 hover:opacity-100'}`}>
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-colors shadow-sm ${step >= 1 ? 'bg-blue-600 text-white' : 'bg-white border-2 border-neutral-200 text-slate-400'}`}>1</div>
-                  <div className="pt-2">
-                    <h4 className={`font-bold text-base mb-1 ${step >= 1 ? 'text-navy-900' : 'text-slate-500'}`}>Informations Élève</h4>
-                    <p className="text-xs text-slate-500 font-medium">Identité, classe & options</p>
-                  </div>
-                </div>
-
-                {/* Step 2 */}
-                <div onClick={() => step >= 2 && handleStepChange(2)} className={`relative z-10 flex items-start gap-4 transition-all duration-300 ${step >= 2 ? 'cursor-pointer' : 'cursor-not-allowed'} ${step === 2 ? 'opacity-100 scale-105' : 'opacity-60 hover:opacity-100'}`}>
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-colors shadow-sm ${step >= 2 ? 'bg-orange-500 text-white' : 'bg-white border-2 border-neutral-200 text-slate-400'}`}>2</div>
-                  <div className="pt-2">
-                    <h4 className={`font-bold text-base mb-1 ${step >= 2 ? 'text-navy-900' : 'text-slate-500'}`}>Informations Parent</h4>
-                    <p className="text-xs text-slate-500 font-medium">Coordonnées & contacts</p>
-                  </div>
-                </div>
-
-                {/* Step 3 */}
-                <div onClick={() => step >= 3 && handleStepChange(3)} className={`relative z-10 flex items-start gap-4 transition-all duration-300 ${step >= 3 ? 'cursor-pointer' : 'cursor-not-allowed'} ${step === 3 ? 'opacity-100 scale-105' : 'opacity-60 hover:opacity-100'}`}>
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-colors shadow-sm ${step >= 3 ? 'bg-teal-500 text-white' : 'bg-white border-2 border-neutral-200 text-slate-400'}`}>3</div>
-                  <div className="pt-2">
-                    <h4 className={`font-bold text-base mb-1 ${step >= 3 ? 'text-navy-900' : 'text-slate-500'}`}>Dossier & Fiches</h4>
-                    <p className="text-xs text-slate-500 font-medium">Documents justificatifs</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-16 p-5 bg-blue-50/50 border border-blue-100 rounded-2xl">
-                <h4 className="font-bold text-navy-900 text-sm mb-2">Besoin d'aide ?</h4>
-                <p className="text-xs text-slate-600">Notre équipe est disponible au <strong className="text-blue-600">+224 00 00 00 00</strong> pour vous accompagner.</p>
-              </div>
-            </div>
-
-            {/* RIGHT SIDE: ACTIVE STEP CONTENT */}
-            <div className="w-full md:w-2/3 p-6 md:p-10 step-content relative">
-              {step === 1 && (
-                <div>
-                  <h2 className="font-display text-2xl font-bold text-navy-900 mb-1">Informations de l&apos;élève</h2>
-                  <p className="text-slate-500 text-sm mb-6">
-                    {config ? `${config.etablissementNom} — année ${config.anneeLibelle}` : "Chargement…"}
-                  </p>
-                  <div className="grid md:grid-cols-2 gap-3">
-                    <input className={CHAMP} placeholder="Prénom de l'élève *" value={form.prenomEleve} onChange={(e) => maj("prenomEleve", e.target.value)} />
-                    <input className={CHAMP} placeholder="Nom de l'élève *" value={form.nomEleve} onChange={(e) => maj("nomEleve", e.target.value)} />
-                    <input type="date" className={CHAMP} value={form.dateNaissance} onChange={(e) => maj("dateNaissance", e.target.value)} />
-                    <select className={CHAMP} value={form.sexe} onChange={(e) => maj("sexe", e.target.value)}>
-                      <option value="">Sexe</option>
-                      <option value="M">Masculin</option>
-                      <option value="F">Féminin</option>
-                    </select>
-                    <select className={`${CHAMP} md:col-span-2`} value={form.niveauId} onChange={(e) => maj("niveauId", e.target.value)}>
-                      <option value="">Niveau souhaité</option>
-                      {config?.niveaux.map((n) => (
-                        <option key={n.id} value={n.id}>{n.nom} — {n.cycle}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="pt-6 flex justify-end">
-                    <button onClick={() => setStep(2)} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-xl flex items-center gap-2 transition-all shadow-md shadow-blue-600/30 text-sm">
-                      Étape suivante <ChevronRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {step === 2 && (
-                <div>
-                  <h2 className="font-display text-2xl font-bold text-navy-900 mb-1">Coordonnées du responsable</h2>
-                  <p className="text-slate-500 text-sm mb-6">Nous utiliserons ces informations pour vous recontacter.</p>
-                  <div className="grid md:grid-cols-2 gap-3">
-                    <input className={CHAMP} placeholder="Prénom du tuteur" value={form.prenomTuteur} onChange={(e) => maj("prenomTuteur", e.target.value)} />
-                    <input className={CHAMP} placeholder="Nom du tuteur" value={form.nomTuteur} onChange={(e) => maj("nomTuteur", e.target.value)} />
-                    <input className={CHAMP} placeholder="Téléphone * (+224…)" value={form.telephone} onChange={(e) => maj("telephone", e.target.value)} />
-                    <input type="email" className={CHAMP} placeholder="Email (optionnel)" value={form.email} onChange={(e) => maj("email", e.target.value)} />
-                    <textarea className={`${CHAMP} md:col-span-2`} rows={3} placeholder="Message ou précisions (optionnel)" value={form.message} onChange={(e) => maj("message", e.target.value)} />
-                  </div>
-                  <div className="pt-6 flex justify-between items-center">
-                    <button onClick={() => setStep(1)} className="text-slate-500 hover:text-navy-900 text-sm font-bold py-2.5 px-4 rounded-xl flex items-center gap-2">
-                      <ChevronLeft className="h-4 w-4" /> Retour
-                    </button>
-                    <button onClick={() => setStep(3)} className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold py-2.5 px-6 rounded-xl flex items-center gap-2 shadow-md shadow-orange-500/30">
-                      Étape suivante <ChevronRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {step === 3 && (
-                <div>
-                  <h2 className="font-display text-2xl font-bold text-navy-900 mb-1">Récapitulatif</h2>
-                  <p className="text-slate-500 text-sm mb-6">Vérifiez puis envoyez votre demande.</p>
-                  <div className="rounded-2xl border border-neutral-200 bg-white p-5 text-sm space-y-2">
-                    <p><span className="text-slate-500">Élève : </span><strong>{form.prenomEleve} {form.nomEleve}</strong></p>
-                    <p><span className="text-slate-500">Niveau : </span>{config?.niveaux.find((n) => n.id === form.niveauId)?.nom ?? "Non précisé"}</p>
-                    <p><span className="text-slate-500">Contact : </span>{form.prenomTuteur} {form.nomTuteur} — {form.telephone || "—"}{form.email ? ` · ${form.email}` : ""}</p>
-                    {form.message && <p className="italic text-slate-500">« {form.message} »</p>}
-                  </div>
-                  <p className="mt-4 text-xs text-slate-500 leading-relaxed bg-blue-50/50 p-3 rounded-xl border border-blue-100">
-                    Les pièces du dossier (extrait de naissance, bulletins, photos, certificat médical…) seront à fournir lors du rendez-vous fixé par l&apos;administration.
-                  </p>
-                  {erreur && <p className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">{erreur}</p>}
-                  <div className="pt-6 flex justify-between items-center border-t border-neutral-100 mt-4">
-                    <button onClick={() => setStep(2)} className="text-slate-500 hover:text-navy-900 text-sm font-bold py-2.5 px-4 rounded-xl flex items-center gap-2">
-                      <ChevronLeft className="h-4 w-4" /> Retour
-                    </button>
-                    <button onClick={handleSubmit} disabled={envoi} className="bg-green-600 hover:bg-green-700 text-white text-sm font-bold py-3 px-8 rounded-xl flex items-center gap-2 shadow-md shadow-green-600/30 disabled:opacity-60">
-                      {envoi ? "Envoi…" : "Soumettre la demande"} <CheckCircle2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-          )}
+            <FormulairePreinscription accueilHref="/" />
         </div>
         </section>
 

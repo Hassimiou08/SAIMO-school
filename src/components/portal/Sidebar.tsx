@@ -10,7 +10,7 @@ import {
   Megaphone, Sparkles,
   BarChart3, ShieldAlert, UserCog,
   Settings, MessageSquare, UserPlus, UserCircle2,
-  Landmark, type LucideIcon,
+  Landmark, Globe, type LucideIcon,
 } from "lucide-react";
 import { peutFaire, type Permission } from "@/server/permissions/roles";
 import { PERMISSION_PAGE_PORTAIL } from "@/lib/pages-portail";
@@ -182,6 +182,19 @@ export function Sidebar() {
             >
               <Settings className="h-[18px] w-[18px]" />
               Paramètres
+            </Link>
+          )}
+          {voitParametres && (
+            <Link
+              href="/portail/parametres/site-public"
+              className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors ${
+                pathname === "/portail/parametres/site-public"
+                  ? "bg-white/20 text-white shadow-md"
+                  : "text-white/70 hover:bg-white/15 hover:text-white"
+              }`}
+            >
+              <Globe className="h-[18px] w-[18px]" />
+              Site public
             </Link>
           )}
           <LogoutButton className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white/70 transition-colors hover:bg-red-500/20 hover:text-red-200" />

@@ -9,11 +9,13 @@ export type TypeEmail =
   | "rappel_echeance"
   | "bulletin_disponible"
   | "annonce_administrative"
-  | "rapport_direction";
+  | "rapport_direction"
+  | "notification_preinscription"
+  | "message_contact";
 
 // ─── Templates HTML intégrés ──────────────────────────────────
 
-function templateBase(contenu: string, titre: string): string {
+export function templateBase(contenu: string, titre: string, entete = "SAIMO Ecole"): string {
   return `<!DOCTYPE html>
 <html lang="fr">
 <head><meta charset="UTF-8"><title>${titre}</title>
@@ -29,9 +31,9 @@ function templateBase(contenu: string, titre: string): string {
 </head>
 <body>
 <div class="container">
-  <div class="header"><h1>SAIMO Ecole</h1></div>
+  <div class="header"><h1>${entete}</h1></div>
   <div class="body">${contenu}</div>
-  <div class="footer">© ${new Date().getFullYear()} SAIMO Ecole — Communication automatique</div>
+  <div class="footer">© ${new Date().getFullYear()} ${entete} — Communication automatique</div>
 </div>
 </body>
 </html>`;
@@ -46,7 +48,10 @@ export async function envoyerEmail(params: {
   sujet: string;
   htmlContent: string;
   etablissementId?: string;
-}): Promise<void> {
+  /** Nom affiché comme expéditeur (ex. le nom de l'école) ; l'adresse reste celle de la plateforme. */
+  expediteurNom?: string;
+  replyTo?: { email: string; name?: string };
+}): Promise<boolean> {
   // Créer la notification en base (statut: en_attente)
   const notification = await prisma.notification.create({
     data: {
@@ -64,6 +69,8 @@ export async function envoyerEmail(params: {
     subject: params.sujet,
     htmlContent: params.htmlContent,
     tags: [params.type],
+    expediteurNom: params.expediteurNom,
+    replyTo: params.replyTo,
   });
 
   // RM-18 : suivre le statut sans dupliquer l'opération métier
@@ -77,6 +84,7 @@ export async function envoyerEmail(params: {
       tentatives: 1,
     },
   });
+  return resultat.success;
 }
 
 // ─── Emails spécialisés ───────────────────────────────────────

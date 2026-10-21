@@ -68,6 +68,20 @@ export function PreInscriptionsManager({
     });
   };
 
+  // Enfants d'une même demande : références PRE-XXXX-1, PRE-XXXX-2… (même racine).
+  const fratries = useMemo(() => {
+    const parRacine = new Map<string, PreInscriptionDTO[]>();
+    for (const d of demandes) {
+      const racine = /^(PRE-[A-Z0-9]+)-\d+$/.exec(d.reference)?.[1];
+      if (racine) parRacine.set(racine, [...(parRacine.get(racine) ?? []), d]);
+    }
+    const autres = new Map<string, string[]>();
+    for (const groupe of parRacine.values()) {
+      for (const d of groupe) autres.set(d.id, groupe.filter((x) => x.id !== d.id).map((x) => x.eleve));
+    }
+    return autres;
+  }, [demandes]);
+
   const cartes = [
     { l: "Nouvelles", v: stats.nouvelle },
     { l: "Contactées", v: stats.contactee },
@@ -118,6 +132,11 @@ export function PreInscriptionsManager({
                   <p className="font-medium text-neutral-800">{d.eleve}</p>
                   <p className="text-xs text-neutral-500">{d.sexe ?? "—"}{d.dateNaissance ? ` · ${d.dateNaissance}` : ""}</p>
                   {d.tuteur && <p className="text-xs text-neutral-400">Tuteur : {d.tuteur}</p>}
+                  {(fratries.get(d.id)?.length ?? 0) > 0 && (
+                    <p className="mt-1 inline-block rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700">
+                      Même demande que : {fratries.get(d.id)!.join(", ")}
+                    </p>
+                  )}
                   {d.message && <p className="mt-1 text-xs italic text-neutral-400">« {d.message} »</p>}
                 </td>
                 <td className="px-5 py-3 text-neutral-600">{d.niveau ?? "—"}</td>

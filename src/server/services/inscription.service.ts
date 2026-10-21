@@ -3,15 +3,21 @@ import { audit, AuditAction, AuditEntite } from "@/server/logs/audit";
 import { genererMatricule } from "@/server/services/eleve.service";
 import { trouverOuCreerParent, relierParentEleve } from "@/server/services/parent.service";
 
-export interface PreInscriptionInput {
-  etablissementId: string;
-  anneeScolaireId: string;
-  niveauId?: string;
-  niveauSouhaite?: string;
+/** Un enfant d'une demande de pré-inscription. */
+export interface EnfantPreInscription {
   prenomEleve: string;
   nomEleve: string;
   dateNaissance?: Date;
   sexe?: string;
+  niveauId?: string;
+  niveauSouhaite?: string;
+}
+
+/** Demande déposée par une famille : un responsable, un ou plusieurs enfants. */
+export interface DemandePreInscription {
+  etablissementId: string;
+  anneeScolaireId: string;
+  enfants: EnfantPreInscription[];
   prenomTuteur?: string;
   nomTuteur?: string;
   telephone: string;
@@ -19,11 +25,10 @@ export interface PreInscriptionInput {
   message?: string;
 }
 
-/** Config publique du tunnel de pré-inscription (établissement pilote). */
-export async function getConfigPreInscriptionPublique() {
+/** Configuration publique du tunnel de pré-inscription d'une école (année active, niveaux proposés). */
+export async function getConfigPreInscriptionPublique(etablissementId: string) {
   const etablissement = await prisma.etablissement.findFirst({
-    where: { actif: true },
-    orderBy: { createdAt: "asc" },
+    where: { actif: true, id: etablissementId },
   });
   if (!etablissement) return null;
 
@@ -48,30 +53,41 @@ export async function getConfigPreInscriptionPublique() {
   };
 }
 
-export async function creerPreInscription(data: PreInscriptionInput) {
-  const reference = `PRE-${Date.now().toString(36).toUpperCase().slice(-8)}`;
+/**
+ * Enregistre une demande : une pré-inscription par enfant.
+ * Les enfants d'une même demande partagent la racine de leur référence
+ * (PRE-XXXX-1, PRE-XXXX-2…), ce qui permet au portail de les regrouper en fratrie.
+ */
+export async function creerPreInscriptions(data: DemandePreInscription) {
+  const racine = `PRE-${Date.now().toString(36).toUpperCase().slice(-6)}${Math.random().toString(36).slice(2, 4).toUpperCase()}`;
+  const plusieurs = data.enfants.length > 1;
 
-  await prisma.preInscription.create({
-    data: {
-      etablissementId: data.etablissementId,
-      anneeScolaireId: data.anneeScolaireId,
-      niveauId: data.niveauId ?? null,
-      reference,
-      prenomEleve: data.prenomEleve,
-      nomEleve: data.nomEleve,
-      dateNaissance: data.dateNaissance ?? null,
-      sexe: data.sexe ?? null,
-      niveauSouhaite: data.niveauSouhaite ?? null,
-      prenomTuteur: data.prenomTuteur ?? null,
-      nomTuteur: data.nomTuteur ?? null,
-      telephone: data.telephone,
-      email: data.email ?? null,
-      message: data.message ?? null,
-      statut: "nouvelle",
-    },
-  });
+  const crees = await prisma.$transaction(
+    data.enfants.map((e, i) =>
+      prisma.preInscription.create({
+        data: {
+          etablissementId: data.etablissementId,
+          anneeScolaireId: data.anneeScolaireId,
+          niveauId: e.niveauId ?? null,
+          reference: plusieurs ? `${racine}-${i + 1}` : racine,
+          prenomEleve: e.prenomEleve,
+          nomEleve: e.nomEleve,
+          dateNaissance: e.dateNaissance ?? null,
+          sexe: e.sexe ?? null,
+          niveauSouhaite: e.niveauSouhaite ?? null,
+          prenomTuteur: data.prenomTuteur ?? null,
+          nomTuteur: data.nomTuteur ?? null,
+          telephone: data.telephone,
+          email: data.email ?? null,
+          message: data.message ?? null,
+          statut: "nouvelle",
+        },
+        select: { reference: true },
+      }),
+    ),
+  );
 
-  return { reference };
+  return { reference: racine, references: crees.map((c) => c.reference) };
 }
 
 /**

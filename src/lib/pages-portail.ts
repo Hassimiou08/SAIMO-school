@@ -31,4 +31,5 @@ export const PERMISSION_PAGE_PORTAIL: Record<string, Permission | null> = {
   "/portail/audit": "audit:view",
   "/portail/profil": null,
   "/portail/parametres": "parametres:view",
+  "/portail/parametres/site-public": "parametres:view",
 };

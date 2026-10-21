@@ -1,22 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { FormulaireContact } from "@/components/ecole/FormulaireContact";
 import {
   MapPin, 
   Phone, 
   Mail, 
-  Send, 
   Clock, 
   MessageSquare,
-  CheckCircle2,
-  Briefcase,
-  Building,
-  Wallet,
-  MonitorPlay,
   ArrowRight
 } from "lucide-react";
 
@@ -26,7 +21,6 @@ if (typeof window !== "undefined") {
 
 export default function ContactPage() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isSubmitted, setIsSubmitted] = useState(false);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -78,19 +72,6 @@ export default function ContactPage() {
     }, containerRef);
     return () => ctx.revert();
   }, []);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitted(true);
-    
-    // Animation de succès
-    setTimeout(() => {
-      gsap.fromTo(".success-el", 
-        { scale: 0.8, opacity: 0, y: 20 }, 
-        { scale: 1, opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "back.out(1.5)" }
-      );
-    }, 50);
-  };
 
   return (
     <div ref={containerRef} className="min-h-screen bg-paper-100 flex flex-col font-sans">
@@ -198,78 +179,7 @@ export default function ContactPage() {
 
             {/* RIGHT SIDE: FORM */}
             <div className="w-full lg:w-[60%] p-10 md:p-14 bg-white relative">
-              {isSubmitted ? (
-                // SUCCESS SCREEN
-                <div className="h-full flex flex-col items-center justify-center text-center py-10 min-h-[400px]">
-                  <div className="success-el h-24 w-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-green-600/20">
-                    <CheckCircle2 className="h-12 w-12" />
-                  </div>
-                  <h2 className="success-el font-display text-3xl md:text-4xl font-bold text-navy-900 mb-4">Message envoyé !</h2>
-                  <p className="success-el text-slate-600 text-lg max-w-md mx-auto mb-8 leading-relaxed">
-                    Merci de nous avoir contactés. Notre équipe vous répondra dans les plus brefs délais à l'adresse indiquée.
-                  </p>
-                  <button onClick={() => setIsSubmitted(false)} className="success-el bg-paper-50 border border-neutral-200 text-navy-900 font-bold py-3 px-8 rounded-xl hover:bg-neutral-100 transition-colors shadow-sm">
-                    Envoyer un autre message
-                  </button>
-                </div>
-              ) : (
-                // ACTUAL FORM
-                <form onSubmit={handleSubmit} className="h-full flex flex-col justify-center">
-                  <div className="form-item mb-8">
-                    <h2 className="font-display text-3xl font-bold text-navy-900 mb-2 flex items-center gap-2">
-                      Envoyez-nous un message <MessageSquare className="h-6 w-6 text-orange-500"/>
-                    </h2>
-                    <p className="text-sm text-slate-500">Remplissez le formulaire ci-dessous et nous vous recontacterons rapidement.</p>
-                  </div>
-
-                  <div className="space-y-5">
-                    <div className="grid md:grid-cols-2 gap-5">
-                      <div className="form-item space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Prénom <span className="text-red-500">*</span></label>
-                        <input required type="text" placeholder="Votre prénom" className="w-full p-3.5 bg-paper-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-blue-600 outline-none transition-all text-sm" />
-                      </div>
-                      <div className="form-item space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Nom <span className="text-red-500">*</span></label>
-                        <input required type="text" placeholder="Votre nom" className="w-full p-3.5 bg-paper-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-blue-600 outline-none transition-all text-sm" />
-                      </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-5">
-                      <div className="form-item space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Email <span className="text-red-500">*</span></label>
-                        <input required type="email" placeholder="adresse@email.com" className="w-full p-3.5 bg-paper-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-blue-600 outline-none transition-all text-sm" />
-                      </div>
-                      <div className="form-item space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Téléphone</label>
-                        <input type="tel" placeholder="+224..." className="w-full p-3.5 bg-paper-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-blue-600 outline-none transition-all text-sm" />
-                      </div>
-                    </div>
-
-                    <div className="form-item space-y-1.5">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Sujet de la demande <span className="text-red-500">*</span></label>
-                      <select required defaultValue="" className="w-full p-3.5 bg-paper-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-blue-600 outline-none transition-all text-sm text-slate-600 appearance-none">
-                        <option value="" disabled>Sélectionnez un sujet</option>
-                        <option>Demande d'admission</option>
-                        <option>Informations sur la scolarité</option>
-                        <option>Demande de partenariat</option>
-                        <option>Recrutement</option>
-                        <option>Autre</option>
-                      </select>
-                    </div>
-
-                    <div className="form-item space-y-1.5">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Votre message <span className="text-red-500">*</span></label>
-                      <textarea required rows={4} placeholder="Comment pouvons-nous vous aider ?" className="w-full p-3.5 bg-paper-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-blue-600 outline-none transition-all text-sm resize-none"></textarea>
-                    </div>
-
-                    <div className="form-item pt-4">
-                      <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/30 hover:scale-[1.02]">
-                        Envoyer le message <Send className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                </form>
-              )}
+              <FormulaireContact />
             </div>
           </div>
         </div>

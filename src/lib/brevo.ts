@@ -19,6 +19,8 @@ export async function sendEmail(params: {
   htmlContent: string;
   replyTo?: { email: string; name?: string };
   tags?: string[];
+  /** Remplace le nom d'expéditeur par défaut (l'adresse d'envoi vérifiée ne change pas). */
+  expediteurNom?: string;
 }): Promise<{ success: boolean; idExterne?: string; motifEchec?: string }> {
   if (!apiKey) {
     return { success: false, motifEchec: "BREVO_API_KEY non configurée" };
@@ -26,7 +28,7 @@ export async function sendEmail(params: {
 
   try {
     const res = await brevoClient.transactionalEmails.sendTransacEmail({
-      sender: senderDefault,
+      sender: params.expediteurNom ? { ...senderDefault, name: params.expediteurNom } : senderDefault,
       to: params.to,
       subject: params.subject,
       htmlContent: params.htmlContent,
