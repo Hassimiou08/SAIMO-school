@@ -98,6 +98,28 @@ export const siteEcoleSchema = z.object({
 
 export type SiteEcole = z.output<typeof siteEcoleSchema>;
 
+/** Identité d'une école appliquée aux pages partagées (connexion…) quand on arrive depuis son site. */
+export type MarqueEcole = {
+  slug: string;
+  nomComplet: string;
+  nomCourt: string;
+  logo: string;
+  deviseEcole: string;
+  primary: string;
+  from: string;
+  to: string;
+};
+
+/** Variables CSS des couleurs d'une école (mêmes noms que sur son site). */
+export function couleursMarque(m: MarqueEcole | null): Record<string, string> {
+  return m ? { "--ec-primary": m.primary, "--ec-from": m.from, "--ec-to": m.to } : {};
+}
+
+/** Ajoute `?ecole=…` à un lien quand on navigue dans l'univers d'une école. */
+export function avecEcole(href: string, m: MarqueEcole | null): string {
+  return m ? `${href}${href.includes("?") ? "&" : "?"}ecole=${encodeURIComponent(m.slug)}` : href;
+}
+
 /** Nombre maximal d'enfants dans une même demande de préinscription. */
 export const MAX_ENFANTS_PREINSCRIPTION = 6;
 

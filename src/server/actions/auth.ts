@@ -2,7 +2,10 @@
 
 import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
-import { signIn, signOut } from "@/lib/auth";
+import { auth, signIn, signOut } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { CLE_SLUG } from "@/lib/site-ecole";
+import { getSiteEcole } from "@/server/dal/site-ecole";
 
 async function connecter(
   formData: FormData,
@@ -42,5 +45,20 @@ export async function actionConnexionParent(
 }
 
 export async function actionDeconnexion() {
-  await signOut({ redirectTo: "/connexion" });
+  // Retour sur la page de connexion de l'école de l'utilisateur, si elle a un site publié.
+  let redirectTo = "/connexion";
+  try {
+    const session = await auth();
+    const etablissementId = session?.user?.etablissementId;
+    if (etablissementId) {
+      const ref = await prisma.parametre.findUnique({
+        where: { etablissementId_cle: { etablissementId, cle: CLE_SLUG } },
+        select: { valeur: true },
+      });
+      if (ref && (await getSiteEcole(ref.valeur))) redirectTo = `/connexion?ecole=${encodeURIComponent(ref.valeur)}`;
+    }
+  } catch {
+    // En cas de souci, on garde la page de connexion générique.
+  }
+  await signOut({ redirectTo });
 }

@@ -8,14 +8,16 @@ import { Mail, Lock, Loader2 } from "lucide-react";
 import { LogoLockup } from "@/components/Logo";
 import Link from "next/link";
 import { actionConnexionParent } from "@/server/actions/auth";
+import type { MarqueEcole } from "@/lib/site-ecole";
+import { EcoleLogo } from "@/components/ecole/EcoleUi";
 
-function SubmitButton() {
+function SubmitButton({ marque }: { marque: MarqueEcole | null }) {
   const { pending } = useFormStatus();
   return (
     <button
       type="submit"
       disabled={pending}
-      className="w-full rounded-xl bg-gradient-to-r from-blue-500 to-orange-400 hover:from-blue-600 hover:to-orange-500 py-4 font-bold text-white transition-all shadow-[0_8px_20px_-8px_rgba(249,115,22,0.5)] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+      className={`w-full rounded-xl ${marque ? "bg-[var(--ec-primary)] hover:opacity-90" : "bg-gradient-to-r from-blue-500 to-orange-400 hover:from-blue-600 hover:to-orange-500"} py-4 font-bold text-white transition-all shadow-[0_8px_20px_-8px_rgba(249,115,22,0.5)] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
     >
       {pending ? (
         <>
@@ -29,7 +31,7 @@ function SubmitButton() {
   );
 }
 
-export function VisitorsRegistration() {
+export function VisitorsRegistration({ marque = null }: { marque?: MarqueEcole | null }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [error, formAction] = useActionState(actionConnexionParent, undefined);
 
@@ -47,14 +49,21 @@ export function VisitorsRegistration() {
   return (
     <div ref={rootRef} className="w-full bg-transparent" suppressHydrationWarning>
       <div className="card-badge mb-10 flex justify-center lg:hidden step-anim">
-        <Link href="/">
-          <LogoLockup variant="dark" />
-        </Link>
+        {marque ? (
+          <Link href={`/ecoles/${marque.slug}`} className="inline-flex items-center gap-2">
+            <EcoleLogo logo={marque.logo} nom={marque.nomCourt} taille={40} />
+            <span className="font-display text-xl font-bold text-navy-900">{marque.nomCourt}</span>
+          </Link>
+        ) : (
+          <Link href="/">
+            <LogoLockup variant="dark" />
+          </Link>
+        )}
       </div>
 
       <div className="flex flex-col">
         <div className="text-center sm:text-left mb-8 step-anim">
-          <h1 className="font-display text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-orange-500 mb-2">
+          <h1 className={`font-display text-3xl font-extrabold mb-2 ${marque ? "text-[var(--ec-primary)]" : "text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-orange-500"}`}>
             Portail Familles
           </h1>
           <p className="text-sm text-slate-500">
@@ -114,7 +123,7 @@ export function VisitorsRegistration() {
               </span>
             </label>
             <a
-              href="/sections/contact"
+              href={marque ? `/ecoles/${marque.slug}/contact` : "/sections/contact"}
               className="text-xs font-medium text-orange-500 hover:text-orange-600 hover:underline"
             >
               Mot de passe oublié ?
@@ -128,7 +137,7 @@ export function VisitorsRegistration() {
           )}
 
           <div className="step-anim pt-4">
-            <SubmitButton />
+            <SubmitButton marque={marque} />
           </div>
         </form>
       </div>

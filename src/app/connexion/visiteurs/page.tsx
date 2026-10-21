@@ -1,15 +1,22 @@
 import type { Metadata } from "next";
 import VisitorsPageClient from "@/components/auth/VisitorsPageClient";
+import { getMarqueEcole } from "@/server/dal/site-ecole";
 
-export const metadata: Metadata = {
-  title: "Portail Famille — SAIMO",
-  description: "Connectez-vous à votre espace personnel.",
-};
+type Props = { searchParams: Promise<{ ecole?: string }> };
 
-export default function VisitorsPage() {
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const marque = await getMarqueEcole((await searchParams).ecole);
+  return {
+    title: marque ? `Espace familles — ${marque.nomCourt}` : "Portail Famille — SAIMO",
+    description: "Connectez-vous à votre espace personnel.",
+  };
+}
+
+export default async function VisitorsPage({ searchParams }: Props) {
+  const marque = await getMarqueEcole((await searchParams).ecole);
   return (
     <main className="min-h-screen w-full bg-[#FDF8F0]" suppressHydrationWarning>
-      <VisitorsPageClient />
+      <VisitorsPageClient marque={marque} />
     </main>
   );
 }

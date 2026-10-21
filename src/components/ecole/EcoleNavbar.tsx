@@ -28,6 +28,8 @@ export function EcoleNavbar({
 }) {
   const [ouvert, setOuvert] = useState(false);
   const pathname = usePathname();
+  // Connexion aux couleurs de l'école (base = /ecoles/[slug]).
+  const connexion = `/connexion?ecole=${base.slice("/ecoles/".length)}`;
   const actif = (chemin: string) => (chemin === "" ? pathname === base : pathname.startsWith(base + chemin));
 
   return (
@@ -57,7 +59,7 @@ export function EcoleNavbar({
         </ul>
 
         <div className="hidden items-center gap-2 lg:flex">
-          <Link href="/connexion" className="whitespace-nowrap rounded-full border border-white/25 px-4 py-2 text-sm font-semibold transition-colors hover:bg-white/10">
+          <Link href={connexion} className="whitespace-nowrap rounded-full border border-white/25 px-4 py-2 text-sm font-semibold transition-colors hover:bg-white/10">
             Espace parents & personnel
           </Link>
           <Link href={`${base}/preinscription`} className="whitespace-nowrap rounded-full bg-[var(--ec-primary)] px-5 py-2 text-sm font-bold transition-opacity hover:opacity-90">
@@ -95,7 +97,7 @@ export function EcoleNavbar({
             <Link href={`${base}/preinscription`} onClick={() => setOuvert(false)} className="rounded-full bg-[var(--ec-primary)] px-5 py-3 text-center text-sm font-bold">
               Préinscription
             </Link>
-            <Link href="/connexion" onClick={() => setOuvert(false)} className="rounded-full border border-white/25 px-5 py-3 text-center text-sm font-semibold">
+            <Link href={connexion} onClick={() => setOuvert(false)} className="rounded-full border border-white/25 px-5 py-3 text-center text-sm font-semibold">
               Espace parents & personnel
             </Link>
           </div>

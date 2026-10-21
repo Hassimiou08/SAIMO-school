@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireContext, requirePermission } from "@/server/context";
 import { resolveTheme } from "@/lib/theme";
-import { CLE_SITE, CLE_SLUG, siteEcoleSchema, siteParDefaut, type SiteEcole } from "@/lib/site-ecole";
+import { CLE_SITE, CLE_SLUG, siteEcoleSchema, siteParDefaut, type MarqueEcole, type SiteEcole } from "@/lib/site-ecole";
 
 function lireContenu(valeur: string | undefined): SiteEcole | null {
   if (!valeur) return null;
@@ -46,6 +46,24 @@ export const getSiteEcole = cache(async (slug: string) => {
     theme: resolveTheme(etab),
   };
 });
+
+/** Identité visuelle d'une école publiée, ou null (slug absent ou inconnu → pages SAIMO). */
+export async function getMarqueEcole(slug: string | undefined): Promise<MarqueEcole | null> {
+  if (!slug) return null;
+  const ecole = await getSiteEcole(slug);
+  if (!ecole) return null;
+  const { site, theme } = ecole;
+  return {
+    slug: site.slug,
+    nomComplet: site.nomComplet,
+    nomCourt: site.nomCourt,
+    logo: site.logo,
+    deviseEcole: site.deviseEcole,
+    primary: theme.primary,
+    from: theme.sidebarFrom,
+    to: theme.sidebarTo,
+  };
+}
 
 /**
  * Écoles proposées au choix sur le site SAIMO : site publié, établissement actif

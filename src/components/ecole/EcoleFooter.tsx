@@ -41,7 +41,7 @@ export function EcoleFooter({ site, base }: { site: SiteEcole; base: string }) {
             <li><Link href={`${base}/services`} className="hover:text-white">Services</Link></li>
             <li><Link href={`${base}/contact`} className="hover:text-white">Contact</Link></li>
             <li><Link href={`${base}/preinscription`} className="hover:text-white">Préinscription</Link></li>
-            <li><Link href="/connexion" className="hover:text-white">Espace parents & personnel</Link></li>
+            <li><Link href={`/connexion?ecole=${site.slug}`} className="hover:text-white">Espace parents & personnel</Link></li>
           </ul>
         </div>
 
