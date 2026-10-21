@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { audit, AuditAction, AuditEntite } from "@/server/logs/audit";
 import { sendEmail } from "@/lib/brevo";
 import { trouverOuCreerParent, relierParentEleve } from "@/server/services/parent.service";
+import { creerFraisInscription } from "@/server/services/annee.service";
 import {
   trouverEleveParMatricule,
   creerEleve,
@@ -194,35 +195,13 @@ export async function inscrireEleveComplet(input: InscriptionCompleteInput) {
     }
 
     // Frais depuis les échéances du niveau de la classe
-    const classe = await tx.classe.findUnique({
-      where: { id: classeId },
-      select: { niveauId: true },
+    const frais = await creerFraisInscription(tx, {
+      inscriptionId: inscription.id,
+      anneeScolaireId,
+      etablissementId,
+      classeId,
+      type: "nouvelle",
     });
-    const echeances = await tx.echeance.findMany({
-      where: {
-        anneeScolaireId,
-        typeFrais: { etablissementId },
-        OR: [{ niveauId: classe?.niveauId ?? undefined }, { niveauId: null }],
-      },
-      include: { typeFrais: true },
-      orderBy: { dateEcheance: "asc" },
-    });
-
-    const frais = [];
-    for (const e of echeances) {
-      const f = await tx.fraisEleve.create({
-        data: {
-          inscriptionId: inscription.id,
-          echeanceId: e.id,
-          montantDu: e.montant,
-        },
-      });
-      frais.push({
-        id: f.id,
-        libelle: e.libelle ?? e.typeFrais.nom,
-        montantDu: Number(e.montant),
-      });
-    }
 
     return { eleve, inscription, frais };
   });
@@ -239,53 +218,7 @@ export async function inscrireEleveComplet(input: InscriptionCompleteInput) {
   return resultat;
 }
 
-// ─── Réinscription ────────────────────────────────────────────
-
-export async function reinscription(input: {
-  eleveId: string;
-  anneeScolaireId: string;
-  classeId: string;
-  etablissementId: string;
-  inscritParId?: string;
-}) {
-  // RM-03 : pas de double inscription active
-  const inscriptionExistante = await prisma.inscription.findUnique({
-    where: {
-      eleveId_anneeScolaireId_etablissementId: {
-        eleveId: input.eleveId,
-        anneeScolaireId: input.anneeScolaireId,
-        etablissementId: input.etablissementId,
-      },
-    },
-  });
-
-  if (inscriptionExistante && inscriptionExistante.statut === "active") {
-    throw new Error("Cet élève est déjà inscrit pour cette année scolaire");
-  }
-
-  const inscription = await prisma.inscription.create({
-    data: {
-      eleveId: input.eleveId,
-      anneeScolaireId: input.anneeScolaireId,
-      classeId: input.classeId,
-      etablissementId: input.etablissementId,
-      typeInscription: "reinscription",
-      inscritParId: input.inscritParId,
-    },
-    include: { eleve: true, classe: true },
-  });
-
-  await audit({
-    utilisateurId: input.inscritParId,
-    etablissementId: input.etablissementId,
-    action: AuditAction.CREATE,
-    entite: AuditEntite.INSCRIPTION,
-    entiteId: inscription.id,
-    apres: { type: "reinscription", eleveId: input.eleveId },
-  });
-
-  return inscription;
-}
+// La réinscription d'une année sur l'autre est dans annee.service (reinscrireEleves).
 
 // ─── Archiver un élève (suppression logique) ──────────────────
 

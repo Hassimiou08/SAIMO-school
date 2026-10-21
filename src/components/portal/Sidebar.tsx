@@ -10,7 +10,7 @@ import {
   Megaphone, Sparkles,
   BarChart3, ShieldAlert, UserCog,
   Settings, MessageSquare, UserPlus, UserCircle2,
-  Landmark, Globe, type LucideIcon,
+  Landmark, Globe, RefreshCcw, type LucideIcon,
 } from "lucide-react";
 import { peutFaire, type Permission } from "@/server/permissions/roles";
 import { PERMISSION_PAGE_PORTAIL } from "@/lib/pages-portail";
@@ -33,6 +33,7 @@ const NAV_SECTIONS: { label: string | null; items: NavItem[] }[] = [
     items: [
       { icon: Users2,       label: "Élèves",          href: "/portail/eleves" },
       { icon: UserPlus,     label: "Pré-inscriptions", href: "/portail/preinscriptions" },
+      { icon: RefreshCcw,   label: "Réinscriptions",   href: "/portail/reinscriptions" },
       { icon: GraduationCap,label: "Enseignants",      href: "/portail/enseignants" },
       { icon: School,       label: "Classes",          href: "/portail/classes" },
       { icon: BookMarked,   label: "Matières",         href: "/portail/matieres" },

@@ -72,7 +72,7 @@ La page d'accueil du portail affiche un message de bienvenue avec le nombre d'é
 
 | Rubrique | Administrateur | Direction | Proviseur | Censeur | Secrétariat |
 | --- | --- | --- | --- | --- | --- |
-| Élèves, inscriptions | Gère | Consulte | Gère | Consulte | Gère |
+| Élèves, inscriptions, réinscriptions | Gère | Consulte | Gère | Consulte | Gère |
 | Enseignants, affectations | Gère | Consulte | Gère | Consulte | Consulte |
 | Classes, cycles, emploi du temps | Gère | Consulte | Gère | Gère | Consulte |
 | Matières | Gère | Consulte | Gère | Consulte | Consulte |
@@ -111,6 +111,13 @@ Suivez cet ordre une fois, en début d'année : chaque étape s'appuie sur la pr
 9. **Affectations** : pour chaque enseignant, la classe et la matière qu'il enseigne, et s'il est professeur principal.
 10. **Emploi du temps** : choisissez une classe et placez les cours dans la grille (jour, début, fin, matière, salle, enseignant). Cliquez sur un cours pour le modifier.
 11. **Échéances & Frais** : créez les types de frais, leurs échéances, puis générez les frais des élèves (voir Finance).
+
+### Passer à l'année suivante (Administrateur)
+
+1. **Paramètres → Année scolaire → Nouvelle année scolaire** : libellé (ex. 2026-2027) et dates. Cochez **Reprendre les classes** (et, si besoin, les enseignants affectés et professeurs principaux). L'année est créée inactive : rien ne change encore.
+2. Le jour de la bascule, cliquez sur **Activer** en face de la nouvelle année. Tout le portail passe sur cette année : classes, notes, absences, bulletins et frais. L'ancienne année reste conservée et peut être réactivée.
+3. **Paramètres → Année scolaire** : créez les périodes (trimestres) de la nouvelle année, puis vérifiez ses frais dans **Échéances & Frais**.
+4. **Réinscriptions** (menu) : choisissez la classe d'origine de l'année précédente et la classe de destination, cochez les élèves concernés puis **Réinscrire**. Leurs frais sont créés automatiquement. Un élève réinscrit paie la réinscription et non l'inscription ; un nouvel élève paie l'inscription et non la réinscription. Les élèves non cochés (redoublement, départ) se traitent séparément.
 
 ### La fiche d'une classe
 

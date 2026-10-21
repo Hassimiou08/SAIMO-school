@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useRef, useState, useEffect, useTransition } from "react";
 import { useRouter } from "@/lib/offline/router";
 import { executerAction, toastSucces } from "@/lib/offline/client";
+import { actionActiverAnneeScolaire, actionCreerAnneeScolaire } from "@/server/actions/annees";
 import {
   Save, Building, Palette, CalendarClock, Loader2, CheckCircle2, Check,
   Plus, CircleCheck, ImagePlus, Type, ClipboardList, Trash2,
@@ -78,6 +79,8 @@ export function SettingsForm({ etablissement, annees, typesEvaluation }: Props) 
   const [modalPeriode, setModalPeriode] = useState(false);
   const [erreurPeriode, setErreurPeriode] = useState("");
   const [modalType, setModalType] = useState(false);
+  const [modalAnnee, setModalAnnee] = useState(false);
+  const [erreurAnnee, setErreurAnnee] = useState("");
   const [erreurType, setErreurType] = useState("");
 
   const [logo, setLogo] = useState<string | null>(etablissement.logo);
@@ -123,6 +126,37 @@ export function SettingsForm({ etablissement, annees, typesEvaluation }: Props) 
       else {
         toastSucces(r, "Période créée");
         setModalPeriode(false);
+        router.refresh();
+      }
+    });
+  };
+
+  const creerAnnee = (fd: FormData) => {
+    setErreurAnnee("");
+    startTransition(async () => {
+      const r = await actionCreerAnneeScolaire(fd);
+      if (!r.succes) setErreurAnnee(r.erreur);
+      else {
+        toast.success(
+          `Année créée${r.data.classes ? ` avec ${r.data.classes} classe${r.data.classes > 1 ? "s" : ""}` : ""}.`,
+        );
+        setModalAnnee(false);
+        router.refresh();
+      }
+    });
+  };
+
+  const activerAnnee = (id: string, libelle: string) => {
+    const ok = window.confirm(
+      `Activer l'année ${libelle} ?\n\nTout le portail bascule sur cette année : classes, notes, absences, bulletins et frais. ` +
+        `Les élèves devront être réinscrits (menu « Réinscriptions »). Vous pourrez revenir à l'année précédente en l'activant à nouveau.`,
+    );
+    if (!ok) return;
+    startTransition(async () => {
+      const r = await actionActiverAnneeScolaire(id);
+      if (!r.succes) toast.error(r.erreur);
+      else {
+        toast.success(`Année ${libelle} activée.`);
         router.refresh();
       }
     });
@@ -341,8 +375,25 @@ export function SettingsForm({ etablissement, annees, typesEvaluation }: Props) 
       {tab === "annee" && (
         <div className="space-y-6">
           <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden">
+            <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
+              <div>
+                <h3 className="text-sm font-bold text-neutral-900">Années scolaires</h3>
+                <p className="text-xs text-neutral-500">
+                  Préparez l&rsquo;année suivante, puis activez-la le jour de la bascule.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setErreurAnnee("");
+                  setModalAnnee(true);
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-blue-700"
+              >
+                <Plus className="h-3.5 w-3.5" /> Nouvelle année scolaire
+              </button>
+            </div>
             <table className="w-full text-left text-sm">
-              <thead><tr className="border-b border-neutral-100 bg-neutral-50/50 text-xs uppercase text-neutral-500"><th className="px-5 py-3">Année</th><th className="px-5 py-3">Période</th><th className="px-5 py-3">Statut</th></tr></thead>
+              <thead><tr className="border-b border-neutral-100 bg-neutral-50/50 text-xs uppercase text-neutral-500"><th className="px-5 py-3">Année</th><th className="px-5 py-3">Période</th><th className="px-5 py-3">Statut</th><th className="px-5 py-3 text-right">Actions</th></tr></thead>
               <tbody className="divide-y divide-neutral-100">
                 {annees.map((a) => (
                   <tr key={a.id}>
@@ -351,7 +402,18 @@ export function SettingsForm({ etablissement, annees, typesEvaluation }: Props) 
                     <td className="px-5 py-3">
                       {a.active && <span className="rounded-full bg-green-100 px-2.5 py-1 text-[11px] font-semibold text-green-600">Active</span>}
                       {a.verrouillee && <span className="ml-2 rounded-full bg-neutral-800 px-2.5 py-1 text-[11px] font-semibold text-white">Verrouillée</span>}
-                      {!a.active && !a.verrouillee && <span className="text-xs text-neutral-400">Archive</span>}
+                      {!a.active && !a.verrouillee && <span className="text-xs text-neutral-400">Inactive</span>}
+                    </td>
+                    <td className="px-5 py-3 text-right">
+                      {!a.active && (
+                        <button
+                          onClick={() => activerAnnee(a.id, a.libelle)}
+                          disabled={isPending}
+                          className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 transition hover:bg-blue-100 disabled:opacity-60"
+                        >
+                          Activer
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -499,6 +561,36 @@ export function SettingsForm({ etablissement, annees, typesEvaluation }: Props) 
               label="Créer la période"
               pending={isPending}
             />
+          </form>
+        </Modale>
+      )}
+
+      {modalAnnee && (
+        <Modale titre="Nouvelle année scolaire" onClose={() => setModalAnnee(false)}>
+          <form action={creerAnnee} className="space-y-4">
+            <Champ label="Libellé" name="libelle" placeholder="Ex: 2026-2027" pattern="\d{4}-\d{4}" required />
+            <div className="grid grid-cols-2 gap-4">
+              <Champ label="Date de début" name="dateDebut" type="date" required />
+              <Champ label="Date de fin" name="dateFin" type="date" required />
+            </div>
+            {anneeActive && (
+              <div className="space-y-2 rounded-xl border border-neutral-200 p-3 text-sm">
+                <label className="flex items-start gap-2">
+                  <input type="checkbox" name="reprendreClasses" defaultChecked className="mt-0.5 h-4 w-4 accent-blue-600" />
+                  <span>Reprendre les classes de {anneeActive.libelle} (nom, niveau, salle, capacité)</span>
+                </label>
+                <label className="flex items-start gap-2">
+                  <input type="checkbox" name="reprendreAffectations" defaultChecked className="mt-0.5 h-4 w-4 accent-blue-600" />
+                  <span>Reprendre aussi les enseignants affectés et les professeurs principaux</span>
+                </label>
+              </div>
+            )}
+            <p className="rounded-xl bg-blue-50 p-3 text-xs text-blue-800">
+              L&rsquo;année est créée inactive : rien ne change pour l&rsquo;instant. Le jour de la bascule, activez-la,
+              vérifiez ses frais dans « Échéances &amp; Frais », puis réinscrivez les élèves (menu « Réinscriptions »).
+            </p>
+            {erreurAnnee && <Err msg={erreurAnnee} />}
+            <ModalActions onCancel={() => setModalAnnee(false)} label="Créer l'année" pending={isPending} />
           </form>
         </Modale>
       )}

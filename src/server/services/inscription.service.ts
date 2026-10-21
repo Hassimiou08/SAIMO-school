@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { audit, AuditAction, AuditEntite } from "@/server/logs/audit";
 import { genererMatricule } from "@/server/services/eleve.service";
 import { trouverOuCreerParent, relierParentEleve } from "@/server/services/parent.service";
+import { creerFraisInscription } from "@/server/services/annee.service";
 
 /** Un enfant d'une demande de pré-inscription. */
 export interface EnfantPreInscription {
@@ -105,7 +106,15 @@ export async function convertirPreInscription(input: {
   if (!pre) throw new Error("Pré-inscription introuvable");
   if (pre.statut === "convertie") throw new Error("Déjà convertie");
 
-  const matricule = await genererMatricule(input.etablissementId, pre.anneeScolaireId);
+  // L'élève est inscrit dans l'année de la classe choisie (la demande peut dater de l'année précédente).
+  const classeCible = await prisma.classe.findFirst({
+    where: { id: input.classeId, etablissementId: input.etablissementId },
+    select: { anneeScolaireId: true },
+  });
+  if (!classeCible) throw new Error("Classe introuvable");
+  const anneeScolaireId = classeCible.anneeScolaireId;
+
+  const matricule = await genererMatricule(input.etablissementId, anneeScolaireId);
 
   const resultat = await prisma.$transaction(async (tx) => {
     const eleve = await tx.eleve.create({
@@ -122,7 +131,7 @@ export async function convertirPreInscription(input: {
     const inscription = await tx.inscription.create({
       data: {
         eleveId: eleve.id,
-        anneeScolaireId: pre.anneeScolaireId,
+        anneeScolaireId,
         classeId: input.classeId,
         etablissementId: input.etablissementId,
         typeInscription: "nouvelle",
@@ -142,22 +151,13 @@ export async function convertirPreInscription(input: {
     }
 
     // Frais depuis les échéances du niveau de la classe
-    const classe = await tx.classe.findUnique({
-      where: { id: input.classeId },
-      select: { niveauId: true },
+    await creerFraisInscription(tx, {
+      inscriptionId: inscription.id,
+      anneeScolaireId,
+      etablissementId: input.etablissementId,
+      classeId: input.classeId,
+      type: "nouvelle",
     });
-    const echeances = await tx.echeance.findMany({
-      where: {
-        anneeScolaireId: pre.anneeScolaireId,
-        typeFrais: { etablissementId: input.etablissementId },
-        OR: [{ niveauId: classe?.niveauId ?? undefined }, { niveauId: null }],
-      },
-    });
-    for (const e of echeances) {
-      await tx.fraisEleve.create({
-        data: { inscriptionId: inscription.id, echeanceId: e.id, montantDu: e.montant },
-      });
-    }
 
     await tx.preInscription.update({
       where: { id: pre.id },

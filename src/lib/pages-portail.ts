@@ -8,6 +8,7 @@ export const PERMISSION_PAGE_PORTAIL: Record<string, Permission | null> = {
   "/portail": null,
   "/portail/eleves": "eleve:view",
   "/portail/preinscriptions": "inscription:view",
+  "/portail/reinscriptions": "inscription:view",
   "/portail/enseignants": "enseignant:view",
   "/portail/classes": "classe:view",
   "/portail/matieres": "classe:view",

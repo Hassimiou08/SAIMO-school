@@ -6,9 +6,10 @@ import { requireContext, requirePermission } from "@/server/context";
 import {
   creerNouvelEleve,
   inscrireEleveComplet,
-  reinscription,
   archiverUnEleve,
 } from "@/server/services/eleve.service";
+import { reinscrireEleves } from "@/server/services/annee.service";
+import { prisma } from "@/lib/prisma";
 import { mettreAJourEleve } from "@/server/repositories/eleve.repo";
 import { messageErreur } from "@/server/errors";
 
@@ -201,13 +202,19 @@ export async function actionReinscription(
       return { succes: false, erreur: parsed.error.issues[0]?.message ?? "Données invalides" };
     }
 
-    const inscription = await reinscription({
-      ...parsed.data,
+    const r = await reinscrireEleves({
       etablissementId: ctx.etablissementId,
       anneeScolaireId: ctx.anneeScolaireId,
+      classeId: parsed.data.classeId,
+      eleveIds: [parsed.data.eleveId],
       inscritParId: ctx.utilisateurId,
     });
+    if (r.dejaInscrits) return { succes: false, erreur: "Cet élève est déjà inscrit pour cette année scolaire" };
 
+    const inscription = await prisma.inscription.findFirstOrThrow({
+      where: { eleveId: parsed.data.eleveId, anneeScolaireId: ctx.anneeScolaireId, etablissementId: ctx.etablissementId },
+      select: { id: true },
+    });
     revalidatePath("/portail/eleves");
     return { succes: true, data: { inscriptionId: inscription.id } };
   } catch (error) {
