@@ -70,7 +70,7 @@ export default async function TarifsPage({ params }: Props) {
         ) : (
           <>
             {/* Ordinateur et tablette : tableau */}
-            <div className="hidden overflow-x-auto rounded-3xl border border-neutral-200 bg-white md:block">
+            <div data-anim="reveal" className="hidden overflow-x-auto rounded-3xl border border-neutral-200 bg-white md:block">
               <table className="w-full text-left text-sm">
                 <thead className="bg-navy-950 text-white">
                   <tr>
@@ -108,7 +108,7 @@ export default async function TarifsPage({ params }: Props) {
             </div>
 
             {/* Téléphone : une carte par classe */}
-            <div className="space-y-6 md:hidden">
+            <div data-anim="cartes" className="space-y-6 md:hidden">
               {blocs.map((g, gi) => (
                 <div key={gi} className="space-y-3">
                   {g.titre && <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--ec-primary)]">{g.titre}</p>}
@@ -136,7 +136,7 @@ export default async function TarifsPage({ params }: Props) {
           </>
         )}
 
-        <div className="mt-12 grid gap-8 md:grid-cols-2">
+        <div data-anim="cartes" className="mt-12 grid gap-8 md:grid-cols-2">
           {t.annexes.length > 0 && (
             <section>
               <h2 className="mb-4 font-display text-2xl font-bold text-navy-900">{t.annexesTitre || "Frais annexes"}</h2>
@@ -166,7 +166,7 @@ export default async function TarifsPage({ params }: Props) {
         </div>
 
         {t.note && (
-          <div className="mt-10 flex gap-3 rounded-2xl border border-neutral-200 bg-white p-5">
+          <div data-anim="reveal" className="mt-10 flex gap-3 rounded-2xl border border-neutral-200 bg-white p-5">
             <Info className="mt-0.5 h-5 w-5 shrink-0 text-[var(--ec-primary)]" />
             <Paragraphes texte={t.note} className="text-sm" />
           </div>

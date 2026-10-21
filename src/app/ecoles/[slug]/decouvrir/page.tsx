@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Découvrir l'école" };
 
 function Bloc({ numero, titre, children }: { numero: number; titre: string; children: React.ReactNode }) {
   return (
-    <section className="border-t border-neutral-200 py-12 first:border-t-0 first:pt-0">
+    <section data-anim="reveal" className="border-t border-neutral-200 py-12 first:border-t-0 first:pt-0">
       <div className="grid gap-6 md:grid-cols-[12rem_1fr]">
         <div>
           <p className="font-display text-sm font-bold text-[var(--ec-primary)]">{String(numero).padStart(2, "0")}</p>
@@ -40,7 +40,7 @@ export default async function DecouvrirPage({ params }: Props) {
         <>
           <Paragraphes texte={p.missionIntro} />
           {p.missionPoints.length > 0 && (
-            <ul className="mt-6 grid gap-4 sm:grid-cols-2">
+            <ul data-anim="cartes" className="mt-6 grid gap-4 sm:grid-cols-2">
               {p.missionPoints.map((m) => (
                 <li key={m.titre} className="rounded-2xl border border-neutral-200 bg-white p-5">
                   <p className="font-bold text-navy-900">{m.titre}</p>
@@ -58,7 +58,7 @@ export default async function DecouvrirPage({ params }: Props) {
       contenu: (
         <>
           <Paragraphes texte={p.valeursIntro} />
-          <div className="mt-6 space-y-4">
+          <div data-anim="cartes" className="mt-6 space-y-4">
             {p.valeurs.map((v) => (
               <div key={v.titre} className="rounded-2xl border-l-4 border-[var(--ec-primary)] bg-white p-6 shadow-sm">
                 <h3 className="font-display text-lg font-bold text-navy-900">{v.titre}</h3>
@@ -101,7 +101,7 @@ export default async function DecouvrirPage({ params }: Props) {
 
       {site.chiffres.length > 0 && (
         <section className="px-6 pb-20">
-          <div className="mx-auto max-w-6xl rounded-[2rem] bg-navy-950 p-10 text-white md:p-14">
+          <div data-anim="reveal" className="mx-auto max-w-6xl rounded-[2rem] bg-navy-950 p-10 text-white md:p-14">
             <p className="text-center text-xs font-bold uppercase tracking-[0.2em] text-white/60">Chiffres clés de l&apos;établissement</p>
             <div className="mt-8 grid grid-cols-2 gap-8 md:grid-cols-4">
               {site.chiffres.map((c) => (

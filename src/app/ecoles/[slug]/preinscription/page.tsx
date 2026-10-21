@@ -23,7 +23,7 @@ export default async function PreinscriptionEcolePage({ params }: Props) {
       />
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 md:py-16">
         {site.preinscriptionsOuvertes ? (
-          <div className="overflow-hidden rounded-[2rem] border border-neutral-200 bg-white shadow-[0_20px_50px_-20px_rgba(15,42,74,0.12)]">
+          <div data-anim="reveal" className="overflow-hidden rounded-[2rem] border border-neutral-200 bg-white shadow-[0_20px_50px_-20px_rgba(15,42,74,0.12)]">
             <FormulairePreinscription
               ecole={site.slug}
               accueilHref={`/ecoles/${site.slug}`}

@@ -66,7 +66,7 @@ export function Titre({
   centre?: boolean;
 }) {
   return (
-    <div className={`mb-10 ${centre ? "mx-auto max-w-3xl text-center" : "max-w-3xl"}`}>
+    <div data-anim="reveal" className={`mb-10 ${centre ? "mx-auto max-w-3xl text-center" : "max-w-3xl"}`}>
       {surtitre && (
         <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[var(--ec-primary)]">{surtitre}</p>
       )}
@@ -98,9 +98,9 @@ export function EnTetePage({ surtitre, titre, intro }: { surtitre: string; titre
         style={{ backgroundImage: "radial-gradient(circle at 2px 2px, white 1px, transparent 0)", backgroundSize: "24px 24px" }}
       />
       <div className="relative mx-auto max-w-6xl">
-        <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-white/70">{surtitre}</p>
-        <h1 className="font-display text-4xl font-bold tracking-tight md:text-5xl">{titre}</h1>
-        {intro && <p className="mt-4 max-w-2xl text-lg leading-relaxed text-white/85">{intro}</p>}
+        <p data-anim="intro" className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-white/70">{surtitre}</p>
+        <h1 data-anim="intro" className="font-display text-4xl font-bold tracking-tight md:text-5xl">{titre}</h1>
+        {intro && <p data-anim="intro" className="mt-4 max-w-2xl text-lg leading-relaxed text-white/85">{intro}</p>}
       </div>
     </section>
   );

@@ -27,25 +27,25 @@ export default async function AccueilEcole({ params }: { params: Promise<{ slug:
         />
         <div className="relative mx-auto max-w-6xl">
           {site.anneeFondation && (
-            <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.18em]">
+            <p data-anim="intro" className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.18em]">
               <Sparkles className="h-4 w-4" /> Depuis {site.anneeFondation}
             </p>
           )}
-          <h1 className="max-w-4xl font-display text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">
+          <h1 data-anim="intro" className="max-w-4xl font-display text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">
             {site.nomComplet}
           </h1>
-          {site.slogan && <p className="mt-6 max-w-2xl text-xl leading-relaxed text-white/90">{site.slogan}</p>}
+          {site.slogan && <p data-anim="intro" className="mt-6 max-w-2xl text-xl leading-relaxed text-white/90">{site.slogan}</p>}
           {site.deviseEcole && (
-            <p className="mt-6 inline-block rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-base backdrop-blur-sm">
+            <p data-anim="intro" className="mt-6 inline-block rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-base backdrop-blur-sm">
               Notre devise : <strong className="font-display tracking-wide">{site.deviseEcole}</strong>
             </p>
           )}
           {site.localisation && (
-            <p className="mt-6 flex max-w-2xl items-start gap-2 text-white/80">
+            <p data-anim="intro" className="mt-6 flex max-w-2xl items-start gap-2 text-white/80">
               <MapPin className="mt-1 h-4 w-4 shrink-0" /> {site.localisation}
             </p>
           )}
-          <div className="mt-10 flex flex-wrap gap-4">
+          <div data-anim="intro" className="mt-10 flex flex-wrap gap-4">
             <Link
               href={`${base}/decouvrir`}
               className="group inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-bold text-navy-900 transition-transform hover:scale-[1.02]"
@@ -66,7 +66,7 @@ export default async function AccueilEcole({ params }: { params: Promise<{ slug:
       {/* Chiffres clés */}
       {site.chiffres.length > 0 && (
         <section className="relative z-10 -mt-16 px-6">
-          <div className="mx-auto grid max-w-6xl grid-cols-2 gap-4 md:grid-cols-4">
+          <div data-anim="cartes" className="mx-auto grid max-w-6xl grid-cols-2 gap-4 md:grid-cols-4">
             {site.chiffres.map((c) => (
               <div key={c.libelle} className="rounded-2xl border border-neutral-200 bg-white p-6 text-center shadow-[0_20px_40px_-20px_rgba(10,25,48,0.25)]">
                 <p className="font-display text-3xl font-bold text-[var(--ec-primary)] md:text-4xl">{insecable(c.valeur)}</p>
@@ -80,7 +80,7 @@ export default async function AccueilEcole({ params }: { params: Promise<{ slug:
       {/* Qui sommes-nous */}
       {(intro || site.presentation.valeurs.length > 0) && (
         <section className="px-6 py-20">
-          <div className="mx-auto grid max-w-6xl items-start gap-12 md:grid-cols-2">
+          <div data-anim="cartes" className="mx-auto grid max-w-6xl items-start gap-12 md:grid-cols-2">
             <div>
               <Titre surtitre="Qui sommes-nous ?" titre={site.nomComplet} />
               {intro && <p className="text-lg leading-relaxed text-ink-700">{intro}</p>}
@@ -121,7 +121,7 @@ export default async function AccueilEcole({ params }: { params: Promise<{ slug:
               intro={site.cycles.map((c) => c.nom.toLowerCase()).join(", ").replace(/, ([^,]*)$/, " et $1") + "."}
               centre
             />
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div data-anim="cartes" className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {site.cycles.map((c, i) => {
                 const Icone = ICONES_CYCLES[i % ICONES_CYCLES.length];
                 return (
@@ -152,7 +152,7 @@ export default async function AccueilEcole({ params }: { params: Promise<{ slug:
         <section className="px-6 py-20">
           <div className="mx-auto max-w-6xl">
             <Titre surtitre="Nos services" titre="Au service des élèves et des familles" />
-            <div className="grid gap-6 md:grid-cols-3">
+            <div data-anim="cartes" className="grid gap-6 md:grid-cols-3">
               {site.services.map((s) => (
                 <Link key={s.titre} href={`${base}/services`} className="group rounded-3xl border border-neutral-200 bg-white p-7 transition-shadow hover:shadow-lg">
                   <h3 className="font-display text-lg font-bold text-navy-900">{s.titre}</h3>
@@ -170,6 +170,7 @@ export default async function AccueilEcole({ params }: { params: Promise<{ slug:
       {/* Préinscription */}
       <section className="px-6 pb-20">
         <div
+          data-anim="reveal"
           className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-8 rounded-[2rem] p-10 text-white md:flex-row md:items-center md:p-14"
           style={{ background: "linear-gradient(120deg, var(--ec-from), var(--ec-to))" }}
         >

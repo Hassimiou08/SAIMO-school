@@ -38,6 +38,7 @@ export default async function CyclesPage({ params }: Props) {
             <article
               key={c.nom}
               id={ancreCycle(c.nom)}
+              data-anim="reveal"
               className="scroll-mt-28 grid gap-8 rounded-[2rem] border border-neutral-200 bg-white p-8 md:grid-cols-[16rem_1fr] md:p-10"
             >
               <div>

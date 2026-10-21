@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getSiteEcole } from "@/server/dal/site-ecole";
 import { EcoleNavbar } from "@/components/ecole/EcoleNavbar";
 import { EcoleFooter } from "@/components/ecole/EcoleFooter";
+import { EcoleAnimations } from "@/components/ecole/EcoleAnimations";
 
 type Props = { children: React.ReactNode; params: Promise<{ slug: string }> };
 
@@ -38,6 +39,7 @@ export default async function EcoleLayout({ children, params }: Props) {
       <EcoleNavbar base={base} nomCourt={site.nomCourt} logo={site.logo} deviseEcole={site.deviseEcole} />
       <main className="flex-1">{children}</main>
       <EcoleFooter site={site} base={base} />
+      <EcoleAnimations />
     </div>
   );
 }
