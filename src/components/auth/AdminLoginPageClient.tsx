@@ -5,6 +5,7 @@ import { AdminLoginForm } from "@/components/auth/AdminLoginForm";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { avecEcole, couleursMarque, type MarqueEcole } from "@/lib/site-ecole";
+import { Lueurs } from "@/components/ecole/EcoleUi";
 
 export default function AdminLoginPageClient({ marque = null }: { marque?: MarqueEcole | null }) {
   return (
@@ -25,8 +26,9 @@ export default function AdminLoginPageClient({ marque = null }: { marque?: Marqu
       {/* DROITE : BANDEAU */}
       <div
         className="hidden lg:flex w-1/2 bg-blue-600 rounded-l-[4rem] flex-col items-center justify-center relative overflow-hidden shadow-[-20px_0_50px_rgba(37,99,235,0.15)]"
-        style={marque ? { background: "linear-gradient(150deg, var(--ec-from), var(--ec-to))" } : undefined}
+        style={marque ? { background: "var(--ec-primary)" } : undefined}
       >
+        {marque && <Lueurs />}
         {!marque && (
           <>
             <div className="absolute top-[-20%] right-[-10%] w-96 h-96 bg-blue-500 rounded-full blur-[80px]" />

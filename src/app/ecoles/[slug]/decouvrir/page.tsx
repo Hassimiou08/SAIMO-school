@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { getSiteEcole } from "@/server/dal/site-ecole";
-import { EnTetePage, Paragraphes } from "@/components/ecole/EcoleUi";
+import { EnTetePage, Lueurs, Paragraphes } from "@/components/ecole/EcoleUi";
 import { insecable } from "@/lib/site-ecole";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -101,13 +101,14 @@ export default async function DecouvrirPage({ params }: Props) {
 
       {site.chiffres.length > 0 && (
         <section className="px-6 pb-20">
-          <div data-anim="reveal" className="mx-auto max-w-6xl rounded-[2rem] bg-navy-950 p-10 text-white md:p-14">
-            <p className="text-center text-xs font-bold uppercase tracking-[0.2em] text-white/60">Chiffres clés de l&apos;établissement</p>
-            <div className="mt-8 grid grid-cols-2 gap-8 md:grid-cols-4">
+          <div data-anim="reveal" className="relative mx-auto max-w-6xl overflow-hidden rounded-[2rem] bg-[var(--ec-primary)] p-10 text-white shadow-[0_20px_50px_-20px_rgba(27,111,209,0.45)] md:p-14">
+            <Lueurs />
+            <p className="relative text-center text-xs font-bold uppercase tracking-[0.2em] text-white/85">Chiffres clés de l&apos;établissement</p>
+            <div className="relative mt-8 grid grid-cols-2 gap-8 md:grid-cols-4">
               {site.chiffres.map((c) => (
                 <div key={c.libelle} className="text-center">
                   <p className="font-display text-4xl font-bold md:text-5xl">{insecable(c.valeur)}</p>
-                  <p className="mt-2 text-sm text-white/70">{c.libelle}</p>
+                  <p className="mt-2 text-sm text-white/90">{c.libelle}</p>
                 </div>
               ))}
             </div>

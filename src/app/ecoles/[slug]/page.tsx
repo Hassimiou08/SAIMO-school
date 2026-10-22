@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Book, BookOpen, CheckCircle2, GraduationCap, Heart, MapPin, Phone, Sparkles } from "lucide-react";
 import { getSiteEcole } from "@/server/dal/site-ecole";
 import { ancreCycle, insecable, lienTel, paragraphes } from "@/lib/site-ecole";
-import { BoutonFacebook, Titre } from "@/components/ecole/EcoleUi";
+import { BoutonFacebook, Halos, Lueurs, Titre } from "@/components/ecole/EcoleUi";
 
 const ICONES_CYCLES = [Heart, BookOpen, Book, GraduationCap];
 
@@ -17,46 +17,40 @@ export default async function AccueilEcole({ params }: { params: Promise<{ slug:
   return (
     <>
       {/* Présentation */}
-      <section
-        className="relative overflow-hidden px-6 pb-28 pt-20 text-white md:pb-36 md:pt-28"
-        style={{ background: "linear-gradient(135deg, var(--ec-to), var(--ec-from) 35%, #081221 85%)" }}
-      >
-        <div
-          className="absolute inset-0 opacity-10"
-          style={{ backgroundImage: "radial-gradient(circle at 2px 2px, white 1px, transparent 0)", backgroundSize: "26px 26px" }}
-        />
+      <section className="relative overflow-hidden bg-paper-100 px-6 pb-28 pt-16 md:pb-36 md:pt-24">
+        <Halos />
         <div className="relative mx-auto max-w-6xl">
           {site.anneeFondation && (
-            <p data-anim="intro" className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.18em]">
-              <Sparkles className="h-4 w-4" /> Depuis {site.anneeFondation}
+            <p data-anim="intro" className="mb-5 inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-[var(--ec-primary)] shadow-sm">
+              <Sparkles className="h-4 w-4 text-[var(--ec-to)]" /> Depuis {site.anneeFondation}
             </p>
           )}
-          <h1 data-anim="intro" className="max-w-4xl font-display text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">
+          <h1 data-anim="intro" className="max-w-4xl font-display text-4xl font-bold leading-[1.1] tracking-tight text-navy-900 sm:text-5xl lg:text-6xl">
             {site.nomComplet}
           </h1>
-          {site.slogan && <p data-anim="intro" className="mt-6 max-w-2xl text-xl leading-relaxed text-white/90">{site.slogan}</p>}
+          {site.slogan && <p data-anim="intro" className="mt-6 max-w-2xl text-xl leading-relaxed text-slate-600">{site.slogan}</p>}
           {site.deviseEcole && (
-            <p data-anim="intro" className="mt-6 inline-block rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-base backdrop-blur-sm">
-              Notre devise : <strong className="font-display tracking-wide">{site.deviseEcole}</strong>
+            <p data-anim="intro" className="mt-6 inline-block rounded-2xl border border-neutral-200 bg-white px-5 py-3 text-base text-slate-600 shadow-sm">
+              Notre devise : <strong className="font-display tracking-wide text-navy-900">{site.deviseEcole}</strong>
             </p>
           )}
           {site.localisation && (
-            <p data-anim="intro" className="mt-6 flex max-w-2xl items-start gap-2 text-white/80">
-              <MapPin className="mt-1 h-4 w-4 shrink-0" /> {site.localisation}
+            <p data-anim="intro" className="mt-6 flex max-w-2xl items-start gap-2 text-slate-600">
+              <MapPin className="mt-1 h-4 w-4 shrink-0 text-[var(--ec-to)]" /> {site.localisation}
             </p>
           )}
           <div data-anim="intro" className="mt-10 flex flex-wrap gap-4">
             <Link
-              href={`${base}/decouvrir`}
-              className="group inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-bold text-navy-900 transition-transform hover:scale-[1.02]"
+              href={`${base}/preinscription`}
+              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[var(--ec-from)] to-[var(--ec-to)] px-7 py-3.5 text-sm font-bold text-white shadow-[0_10px_25px_-8px_rgba(27,111,209,0.5)] transition-transform hover:scale-[1.03]"
             >
-              Découvrir notre école <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              Préinscrire mon enfant <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
             <Link
-              href={`${base}/preinscription`}
-              className="inline-flex items-center gap-2 rounded-full bg-[var(--ec-primary)] px-7 py-3.5 text-sm font-bold text-white shadow-lg transition-opacity hover:opacity-90"
+              href={`${base}/decouvrir`}
+              className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-7 py-3.5 text-sm font-bold text-navy-900 shadow-sm transition-colors hover:border-[var(--ec-primary)] hover:text-[var(--ec-primary)]"
             >
-              Préinscrire mon enfant
+              Découvrir notre école
             </Link>
             <BoutonFacebook lien={site.facebook} variante="clair" />
           </div>
@@ -89,17 +83,18 @@ export default async function AccueilEcole({ params }: { params: Promise<{ slug:
               </Link>
             </div>
             {site.presentation.valeurs.length > 0 && (
-              <div className="rounded-3xl bg-navy-950 p-8 text-white">
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/60">Nos valeurs</p>
-                <ul className="mt-6 space-y-5">
+              <div className="relative overflow-hidden rounded-3xl bg-[var(--ec-primary)] p-8 text-white shadow-[0_20px_40px_-20px_rgba(27,111,209,0.45)]">
+                <Lueurs />
+                <p className="relative text-xs font-bold uppercase tracking-[0.2em] text-white/85">Nos valeurs</p>
+                <ul className="relative mt-6 space-y-5">
                   {site.presentation.valeurs.map((v) => {
                     const [nom, accroche] = v.titre.split(/\s*:\s*/);
                     return (
                       <li key={v.titre} className="flex gap-4">
-                        <CheckCircle2 className="mt-1 h-5 w-5 shrink-0 text-[var(--ec-primary)]" />
+                        <CheckCircle2 className="mt-1 h-5 w-5 shrink-0 text-white" />
                         <div>
                           <p className="font-display text-xl font-bold">{nom}</p>
-                          {accroche && <p className="text-sm text-white/70">{accroche}</p>}
+                          {accroche && <p className="text-sm text-white/85">{accroche}</p>}
                         </div>
                       </li>
                     );
@@ -171,10 +166,10 @@ export default async function AccueilEcole({ params }: { params: Promise<{ slug:
       <section className="px-6 pb-20">
         <div
           data-anim="reveal"
-          className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-8 rounded-[2rem] p-10 text-white md:flex-row md:items-center md:p-14"
-          style={{ background: "linear-gradient(120deg, var(--ec-from), var(--ec-to))" }}
+          className="relative mx-auto flex max-w-6xl flex-col items-start justify-between gap-8 overflow-hidden rounded-[2rem] bg-[var(--ec-primary)] p-10 text-white shadow-[0_20px_50px_-20px_rgba(27,111,209,0.5)] md:flex-row md:items-center md:p-14"
         >
-          <div className="max-w-2xl">
+          <Lueurs />
+          <div className="relative max-w-2xl">
             <h2 className="font-display text-3xl font-bold md:text-4xl">Votre enfant rejoint {site.nomCourt} ?</h2>
             <p className="mt-3 text-lg text-white/85">
               Déposez votre demande de préinscription en ligne en quelques minutes. L&apos;école vous recontacte pour finaliser le dossier.
@@ -190,7 +185,7 @@ export default async function AccueilEcole({ params }: { params: Promise<{ slug:
           </div>
           <Link
             href={`${base}/preinscription`}
-            className="inline-flex shrink-0 items-center gap-2 rounded-full bg-white px-8 py-4 font-bold text-navy-900 transition-transform hover:scale-[1.02]"
+            className="relative inline-flex shrink-0 items-center gap-2 rounded-full bg-white px-8 py-4 font-bold text-[var(--ec-primary)] transition-transform hover:scale-[1.02]"
           >
             Démarrer la préinscription <ArrowRight className="h-5 w-5" />
           </Link>

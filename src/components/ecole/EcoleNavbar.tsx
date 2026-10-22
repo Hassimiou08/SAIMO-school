@@ -33,13 +33,13 @@ export function EcoleNavbar({
   const actif = (chemin: string) => (chemin === "" ? pathname === base : pathname.startsWith(base + chemin));
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-navy-950/95 text-white shadow-md backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-gradient-to-r from-[var(--ec-from)] to-[var(--ec-to)] text-white shadow-md">
       <nav className="mx-auto flex min-h-[4.5rem] max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <Link href={base} className="flex min-w-0 items-center gap-3" aria-label={`Accueil ${nomCourt}`}>
           <EcoleLogo logo={logo} nom={nomCourt} taille={42} />
           <span className="min-w-0">
             <span className="block truncate font-display text-base font-bold tracking-tight sm:text-lg">{nomCourt}</span>
-            {deviseEcole && <span className="hidden truncate text-[11px] text-white/65 sm:block">{deviseEcole}</span>}
+            {deviseEcole && <span className="hidden truncate text-[11px] text-white/80 sm:block">{deviseEcole}</span>}
           </span>
         </Link>
 
@@ -49,7 +49,7 @@ export function EcoleNavbar({
               <Link
                 href={base + l.chemin}
                 className={`rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
-                  actif(l.chemin) ? "bg-white/15 text-white" : "text-white/75 hover:bg-white/10 hover:text-white"
+                  actif(l.chemin) ? "bg-white/20 text-white shadow-sm" : "text-white/85 hover:bg-white/10 hover:text-white"
                 }`}
               >
                 {l.label}
@@ -59,10 +59,10 @@ export function EcoleNavbar({
         </ul>
 
         <div className="hidden items-center gap-2 lg:flex">
-          <Link href={connexion} className="whitespace-nowrap rounded-full border border-white/25 px-4 py-2 text-sm font-semibold transition-colors hover:bg-white/10">
+          <Link href={connexion} className="whitespace-nowrap rounded-full border border-white/30 px-4 py-2 text-sm font-semibold transition-colors hover:border-white hover:bg-white/10">
             Espace parents & personnel
           </Link>
-          <Link href={`${base}/preinscription`} className="whitespace-nowrap rounded-full bg-[var(--ec-primary)] px-5 py-2 text-sm font-bold transition-opacity hover:opacity-90">
+          <Link href={`${base}/preinscription`} className="whitespace-nowrap rounded-full bg-white px-5 py-2 text-sm font-bold text-[var(--ec-primary)] transition-colors hover:bg-[var(--ec-light)]">
             Préinscription
           </Link>
         </div>
@@ -79,14 +79,16 @@ export function EcoleNavbar({
       </nav>
 
       {ouvert && (
-        <div className="border-t border-white/10 bg-navy-950 px-4 pb-5 pt-3 lg:hidden">
+        <div className="border-t border-navy-900/5 bg-paper-50 px-4 pb-5 pt-3 text-navy-900 lg:hidden">
           <ul className="flex flex-col gap-1">
             {LIENS.map((l) => (
               <li key={l.chemin}>
                 <Link
                   href={base + l.chemin}
                   onClick={() => setOuvert(false)}
-                  className={`block rounded-xl px-3 py-3 text-sm font-semibold ${actif(l.chemin) ? "bg-white/15" : "text-white/80"}`}
+                  className={`block rounded-xl border px-3 py-3 text-sm font-semibold ${
+                    actif(l.chemin) ? "border-navy-900/10 bg-[var(--ec-light)] text-[var(--ec-primary)]" : "border-transparent text-ink-700"
+                  }`}
                 >
                   {l.label}
                 </Link>
@@ -94,10 +96,10 @@ export function EcoleNavbar({
             ))}
           </ul>
           <div className="mt-3 grid gap-2">
-            <Link href={`${base}/preinscription`} onClick={() => setOuvert(false)} className="rounded-full bg-[var(--ec-primary)] px-5 py-3 text-center text-sm font-bold">
+            <Link href={`${base}/preinscription`} onClick={() => setOuvert(false)} className="rounded-full bg-gradient-to-r from-[var(--ec-from)] to-[var(--ec-to)] px-5 py-3 text-center text-sm font-bold text-white">
               Préinscription
             </Link>
-            <Link href={connexion} onClick={() => setOuvert(false)} className="rounded-full border border-white/25 px-5 py-3 text-center text-sm font-semibold">
+            <Link href={connexion} onClick={() => setOuvert(false)} className="rounded-full border border-navy-900/10 px-5 py-3 text-center text-sm font-semibold">
               Espace parents & personnel
             </Link>
           </div>

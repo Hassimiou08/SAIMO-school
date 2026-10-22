@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Clock, Mail, MapPin, Phone } from "lucide-react";
 import { getSiteEcole } from "@/server/dal/site-ecole";
 import { lienTel } from "@/lib/site-ecole";
-import { BoutonFacebook, EnTetePage } from "@/components/ecole/EcoleUi";
+import { BoutonFacebook, EnTetePage, Lueurs } from "@/components/ecole/EcoleUi";
 import { FormulaireContact } from "@/components/ecole/FormulaireContact";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -12,11 +12,11 @@ export const metadata: Metadata = { title: "Contact" };
 function Coordonnee({ icone: Icone, libelle, children }: { icone: typeof Phone; libelle: string; children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-4">
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20">
         <Icone className="h-5 w-5" />
       </span>
       <div className="min-w-0">
-        <p className="mb-1 text-xs font-bold uppercase tracking-wider text-white/60">{libelle}</p>
+        <p className="mb-1 text-xs font-bold uppercase tracking-wider text-white/85">{libelle}</p>
         {children}
       </div>
     </div>
@@ -39,9 +39,10 @@ export default async function ContactPage({ params }: Props) {
 
       <div className="mx-auto max-w-6xl px-6 py-16">
         <div data-anim="reveal" className="flex flex-col overflow-hidden rounded-[2rem] border border-neutral-200 bg-white shadow-[0_20px_60px_-20px_rgba(15,42,74,0.12)] lg:flex-row">
-          <div className="w-full bg-navy-950 p-8 text-white md:p-12 lg:w-[40%]">
-            <h2 className="font-display text-2xl font-bold">{site.nomComplet}</h2>
-            <div className="mt-8 space-y-7">
+          <div className="relative w-full overflow-hidden bg-[var(--ec-primary)] p-8 text-white md:p-12 lg:w-[40%]">
+            <Lueurs />
+            <h2 className="relative font-display text-2xl font-bold">{site.nomComplet}</h2>
+            <div className="relative mt-8 space-y-7">
               {site.telephones.length > 0 && (
                 <Coordonnee icone={Phone} libelle="Téléphones">
                   <ul className="space-y-1">
@@ -70,7 +71,7 @@ export default async function ContactPage({ params }: Props) {
               )}
             </div>
             {site.facebook && (
-              <div className="mt-10 border-t border-white/10 pt-8">
+              <div className="relative mt-10 border-t border-white/25 pt-8">
                 <BoutonFacebook lien={site.facebook} />
               </div>
             )}

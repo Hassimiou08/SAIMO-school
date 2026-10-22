@@ -5,6 +5,7 @@ import { VisitorsRegistration } from "@/components/auth/VisitorsRegistration";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { avecEcole, couleursMarque, type MarqueEcole } from "@/lib/site-ecole";
+import { Lueurs } from "@/components/ecole/EcoleUi";
 
 export default function VisitorsPageClient({ marque = null }: { marque?: MarqueEcole | null }) {
   return (
@@ -25,8 +26,9 @@ export default function VisitorsPageClient({ marque = null }: { marque?: MarqueE
       {/* DROITE : BANDEAU */}
       <div
         className="hidden lg:flex w-1/2 bg-gradient-to-br from-blue-500 to-orange-400 rounded-l-[4rem] flex-col items-center justify-center relative overflow-hidden shadow-[-20px_0_50px_rgba(249,115,22,0.15)]"
-        style={marque ? { background: "linear-gradient(150deg, var(--ec-from), var(--ec-to))" } : undefined}
+        style={marque ? { background: "var(--ec-primary)" } : undefined}
       >
+        {marque && <Lueurs />}
         {!marque && (
           <>
             <div className="absolute top-[-20%] right-[-10%] w-96 h-96 bg-blue-600/30 rounded-full blur-[80px]" />

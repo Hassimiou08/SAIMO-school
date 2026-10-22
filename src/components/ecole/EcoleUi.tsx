@@ -41,7 +41,7 @@ export function BoutonFacebook({ lien, variante = "plein" }: { lien: string; var
   const style =
     variante === "plein"
       ? "bg-[#1877F2] text-white hover:bg-[#166FE5]"
-      : "border border-white/25 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20";
+      : "border border-neutral-200 bg-white text-[#1877F2] shadow-sm hover:bg-blue-50";
   return (
     <a
       href={lien}
@@ -86,21 +86,48 @@ export function Paragraphes({ texte, className = "" }: { texte: string; classNam
   );
 }
 
+/** Halos de couleur flous en fond de section (style des pages SAIMO). */
+export function Halos() {
+  return (
+    <>
+      <div className="pointer-events-none absolute -left-24 -top-40 h-[28rem] w-[28rem] rounded-full bg-[var(--ec-from)] opacity-[0.08] blur-[110px]" />
+      <div className="pointer-events-none absolute -bottom-40 -right-24 h-[28rem] w-[28rem] rounded-full bg-[var(--ec-to)] opacity-[0.10] blur-[110px]" />
+    </>
+  );
+}
+
+/**
+ * Lueurs décoratives d'un bloc de couleur unie : reflets clairs, sans mélange
+ * bleu/orange (qui donne un gris terne sur une grande surface).
+ * Le parent doit être `relative overflow-hidden`, son contenu `relative`.
+ */
+export function Lueurs() {
+  return (
+    <>
+      <span aria-hidden="true" className="pointer-events-none absolute -bottom-28 -right-16 h-80 w-80 rounded-full bg-sky-300 opacity-30 blur-[90px]" />
+      <span aria-hidden="true" className="pointer-events-none absolute -left-20 -top-24 h-64 w-64 rounded-full bg-white opacity-15 blur-[70px]" />
+    </>
+  );
+}
+
+/** Texte en dégradé bleu → orange (couleurs du site), pour des mots courts. */
+export function Degrade({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="bg-gradient-to-r from-[var(--ec-from)] to-[var(--ec-to)] bg-clip-text text-transparent">{children}</span>
+  );
+}
+
 /** Bandeau de titre en haut des pages intérieures. */
 export function EnTetePage({ surtitre, titre, intro }: { surtitre: string; titre: string; intro?: string }) {
   return (
-    <section
-      className="relative overflow-hidden px-6 py-16 text-white md:py-20"
-      style={{ background: "linear-gradient(135deg, var(--ec-from), #0A1930 70%)" }}
-    >
-      <div
-        className="absolute inset-0 opacity-10"
-        style={{ backgroundImage: "radial-gradient(circle at 2px 2px, white 1px, transparent 0)", backgroundSize: "24px 24px" }}
-      />
+    <section className="relative overflow-hidden bg-paper-100 px-6 pb-12 pt-16 md:pb-16 md:pt-20">
+      <Halos />
       <div className="relative mx-auto max-w-6xl">
-        <p data-anim="intro" className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-white/70">{surtitre}</p>
-        <h1 data-anim="intro" className="font-display text-4xl font-bold tracking-tight md:text-5xl">{titre}</h1>
-        {intro && <p data-anim="intro" className="mt-4 max-w-2xl text-lg leading-relaxed text-white/85">{intro}</p>}
+        <p data-anim="intro" className="mb-4 inline-block rounded-full border border-neutral-200 bg-white px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ec-primary)] shadow-sm">
+          {surtitre}
+        </p>
+        <h1 data-anim="intro" className="font-display text-4xl font-bold tracking-tight text-navy-900 md:text-5xl">{titre}</h1>
+        {intro && <p data-anim="intro" className="mt-4 max-w-2xl text-lg leading-relaxed text-slate-600">{intro}</p>}
       </div>
     </section>
   );

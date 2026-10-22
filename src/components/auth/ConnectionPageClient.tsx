@@ -5,7 +5,7 @@ import { useEffect, useRef, type CSSProperties } from "react";
 import { gsap } from "gsap";
 import { ShieldCheck, Users, ArrowRight, Home } from "lucide-react";
 import { avecEcole, couleursMarque, type MarqueEcole } from "@/lib/site-ecole";
-import { EcoleLogo } from "@/components/ecole/EcoleUi";
+import { EcoleLogo, Lueurs } from "@/components/ecole/EcoleUi";
 
 /**
  * Choix du portail (personnel ou familles). Sans `marque`, page SAIMO ;
@@ -39,10 +39,10 @@ export default function ConnectionPageClient({ marque = null }: { marque?: Marqu
       <div className="hidden lg:flex w-[45%] bg-navy-950 relative overflow-hidden flex-col justify-between p-12 text-white">
         <div className="absolute inset-0 z-0">
           {marque ? (
-            <div
-              className="absolute inset-0"
-              style={{ background: "linear-gradient(150deg, var(--ec-to), var(--ec-from) 40%, #081221 90%)" }}
-            />
+            <>
+              <div className="absolute inset-0 bg-[var(--ec-primary)]" />
+              <Lueurs />
+            </>
           ) : (
             <>
               {/* eslint-disable-next-line @next/next/no-img-element */}

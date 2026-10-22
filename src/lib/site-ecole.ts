@@ -22,6 +22,8 @@ export const siteEcoleSchema = z.object({
   publie: z.boolean(),
   // L'école reçoit-elle des préinscriptions en ligne (depuis son site et depuis le site SAIMO) ?
   preinscriptionsOuvertes: z.boolean().default(true),
+  // Couleurs du site : celles de SAIMO (bleu et orange) ou celles de l'établissement (Paramètres → Apparence).
+  palette: z.enum(["saimo", "etablissement"]).default("saimo"),
   slug: z
     .string()
     .trim()
@@ -98,6 +100,12 @@ export const siteEcoleSchema = z.object({
 
 export type SiteEcole = z.output<typeof siteEcoleSchema>;
 
+/** Couleurs appliquées au site d'une école (variables CSS --ec-*). */
+export type CouleursSite = { primary: string; light: string; from: string; to: string };
+
+/** Palette SAIMO : bleu et orange du site de la plateforme. */
+export const COULEURS_SAIMO: CouleursSite = { primary: "#1B6FD1", light: "#EFF6FF", from: "#1B6FD1", to: "#F97316" };
+
 /** Identité d'une école appliquée aux pages partagées (connexion…) quand on arrive depuis son site. */
 export type MarqueEcole = {
   slug: string;
@@ -105,14 +113,17 @@ export type MarqueEcole = {
   nomCourt: string;
   logo: string;
   deviseEcole: string;
-  primary: string;
-  from: string;
-  to: string;
+  couleurs: CouleursSite;
 };
+
+/** Variables CSS des couleurs d'un site d'école. */
+export function variablesCouleurs(c: CouleursSite): Record<string, string> {
+  return { "--ec-primary": c.primary, "--ec-light": c.light, "--ec-from": c.from, "--ec-to": c.to };
+}
 
 /** Variables CSS des couleurs d'une école (mêmes noms que sur son site). */
 export function couleursMarque(m: MarqueEcole | null): Record<string, string> {
-  return m ? { "--ec-primary": m.primary, "--ec-from": m.from, "--ec-to": m.to } : {};
+  return m ? variablesCouleurs(m.couleurs) : {};
 }
 
 /** Ajoute `?ecole=…` à un lien quand on navigue dans l'univers d'une école. */
@@ -135,6 +146,7 @@ export function siteParDefaut(etab: {
   return {
     publie: false,
     preinscriptionsOuvertes: true,
+    palette: "saimo",
     slug: slugifier(etab.nom) || etab.code.toLowerCase(),
     logo: "",
     nomComplet: etab.nom,

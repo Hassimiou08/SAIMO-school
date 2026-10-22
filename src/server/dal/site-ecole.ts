@@ -4,7 +4,10 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireContext, requirePermission } from "@/server/context";
 import { resolveTheme } from "@/lib/theme";
-import { CLE_SITE, CLE_SLUG, siteEcoleSchema, siteParDefaut, type MarqueEcole, type SiteEcole } from "@/lib/site-ecole";
+import {
+  CLE_SITE, CLE_SLUG, COULEURS_SAIMO, siteEcoleSchema, siteParDefaut,
+  type CouleursSite, type MarqueEcole, type SiteEcole,
+} from "@/lib/site-ecole";
 
 function lireContenu(valeur: string | undefined): SiteEcole | null {
   if (!valeur) return null;
@@ -40,11 +43,13 @@ export const getSiteEcole = cache(async (slug: string) => {
   const site = lireContenu(contenu?.valeur);
   if (!etab?.actif || !site?.publie) return null;
 
-  return {
-    site,
-    etablissementId: etab.id,
-    theme: resolveTheme(etab),
-  };
+  const theme = resolveTheme(etab);
+  const couleurs: CouleursSite =
+    site.palette === "saimo"
+      ? COULEURS_SAIMO
+      : { primary: theme.primary, light: theme.primaryLight, from: theme.sidebarFrom, to: theme.sidebarTo };
+
+  return { site, etablissementId: etab.id, couleurs };
 });
 
 /** Identité visuelle d'une école publiée, ou null (slug absent ou inconnu → pages SAIMO). */
@@ -52,16 +57,14 @@ export async function getMarqueEcole(slug: string | undefined): Promise<MarqueEc
   if (!slug) return null;
   const ecole = await getSiteEcole(slug);
   if (!ecole) return null;
-  const { site, theme } = ecole;
+  const { site, couleurs } = ecole;
   return {
     slug: site.slug,
     nomComplet: site.nomComplet,
     nomCourt: site.nomCourt,
     logo: site.logo,
     deviseEcole: site.deviseEcole,
-    primary: theme.primary,
-    from: theme.sidebarFrom,
-    to: theme.sidebarTo,
+    couleurs,
   };
 }
 

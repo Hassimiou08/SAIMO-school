@@ -292,6 +292,20 @@ export function SitePublicForm({
             Publier le site
           </label>
         </div>
+        <div className="mt-4 rounded-xl border border-neutral-200 px-4 py-3 text-sm">
+          <p className="font-medium text-navy-900">Couleurs du site</p>
+          <div className="mt-2 flex flex-wrap gap-4">
+            {([
+              ["saimo", "Couleurs SAIMO (bleu et orange)"],
+              ["etablissement", "Couleurs de l'établissement (Paramètres → Apparence)"],
+            ] as const).map(([v, l]) => (
+              <label key={v} className="flex items-center gap-2">
+                <input type="radio" name="palette" checked={site.palette === v} disabled={off} onChange={() => maj({ palette: v })} className="h-4 w-4 accent-blue-600" />
+                {l}
+              </label>
+            ))}
+          </div>
+        </div>
         <label className="mt-4 flex items-start gap-3 rounded-xl border border-neutral-200 px-4 py-3 text-sm">
           <input
             type="checkbox"

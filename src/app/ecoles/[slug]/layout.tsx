@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getSiteEcole } from "@/server/dal/site-ecole";
+import { variablesCouleurs } from "@/lib/site-ecole";
 import { EcoleNavbar } from "@/components/ecole/EcoleNavbar";
 import { EcoleFooter } from "@/components/ecole/EcoleFooter";
 import { EcoleAnimations } from "@/components/ecole/EcoleAnimations";
@@ -24,18 +25,12 @@ export default async function EcoleLayout({ children, params }: Props) {
   const { slug } = await params;
   const ecole = await getSiteEcole(slug);
   if (!ecole) notFound();
-  const { site, theme } = ecole;
+  const { site, couleurs } = ecole;
   const base = `/ecoles/${site.slug}`;
 
-  const couleurs = {
-    "--ec-primary": theme.primary,
-    "--ec-light": theme.primaryLight,
-    "--ec-from": theme.sidebarFrom,
-    "--ec-to": theme.sidebarTo,
-  } as CSSProperties;
 
   return (
-    <div style={couleurs} className="flex min-h-screen flex-col bg-paper-50">
+    <div style={variablesCouleurs(couleurs) as CSSProperties} className="flex min-h-screen flex-col bg-paper-50">
       <EcoleNavbar base={base} nomCourt={site.nomCourt} logo={site.logo} deviseEcole={site.deviseEcole} />
       <main className="flex-1">{children}</main>
       <EcoleFooter site={site} base={base} />

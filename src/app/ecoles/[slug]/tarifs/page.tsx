@@ -72,13 +72,13 @@ export default async function TarifsPage({ params }: Props) {
             {/* Ordinateur et tablette : tableau */}
             <div data-anim="reveal" className="hidden overflow-x-auto rounded-3xl border border-neutral-200 bg-white md:block">
               <table className="w-full text-left text-sm">
-                <thead className="bg-navy-950 text-white">
+                <thead className="bg-[var(--ec-primary)] text-white">
                   <tr>
                     <th className="px-5 py-4 align-bottom font-semibold">Classe</th>
                     {cols.map((c) => (
                       <th key={c.cle} className="px-5 py-4 text-right align-bottom font-semibold">
                         {c.libelle}
-                        {c.detail && <span className="mt-0.5 block text-[11px] font-normal text-white/65">{c.detail}</span>}
+                        {c.detail && <span className="mt-0.5 block text-[11px] font-normal text-white/85">{c.detail}</span>}
                       </th>
                     ))}
                   </tr>
