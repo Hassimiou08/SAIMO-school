@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { ArrowRight, Book, BookOpen, CheckCircle2, GraduationCap, Heart, MapPin, Phone, Sparkles } from "lucide-react";
 import { getSiteEcole } from "@/server/dal/site-ecole";
-import { ancreCycle, insecable, lienTel, paragraphes } from "@/lib/site-ecole";
-import { BoutonFacebook, Halos, Lueurs, Titre } from "@/components/ecole/EcoleUi";
+import { ancreCycle, IMAGE_ACCUEIL_DEFAUT, insecable, lienTel, paragraphes } from "@/lib/site-ecole";
+import { BoutonFacebook, Lueurs, Titre } from "@/components/ecole/EcoleUi";
 
 const ICONES_CYCLES = [Heart, BookOpen, Book, GraduationCap];
 
@@ -16,43 +16,56 @@ export default async function AccueilEcole({ params }: { params: Promise<{ slug:
 
   return (
     <>
-      {/* Présentation */}
-      <section className="relative overflow-hidden bg-paper-100 px-6 pb-28 pt-16 md:pb-36 md:pt-24">
-        <Halos />
+      {/* Présentation : photo en fond, voile bleu nuit pour la lisibilité */}
+      <section className="relative overflow-hidden px-6 pb-32 pt-20 text-white md:pb-40 md:pt-28">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={site.imageAccueil || IMAGE_ACCUEIL_DEFAUT}
+          alt=""
+          fetchPriority="high"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(100deg, rgba(10,25,48,0.9) 0%, rgba(10,25,48,0.72) 45%, color-mix(in srgb, var(--ec-primary) 40%, transparent) 100%)",
+          }}
+        />
         <div className="relative mx-auto max-w-6xl">
           {site.anneeFondation && (
-            <p data-anim="intro" className="mb-5 inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-[var(--ec-primary)] shadow-sm">
+            <p data-anim="intro" className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.18em] backdrop-blur-sm">
               <Sparkles className="h-4 w-4 text-[var(--ec-to)]" /> Depuis {site.anneeFondation}
             </p>
           )}
-          <h1 data-anim="intro" className="max-w-4xl font-display text-4xl font-bold leading-[1.1] tracking-tight text-navy-900 sm:text-5xl lg:text-6xl">
+          <h1 data-anim="intro" className="max-w-4xl font-display text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">
             {site.nomComplet}
           </h1>
-          {site.slogan && <p data-anim="intro" className="mt-6 max-w-2xl text-xl leading-relaxed text-slate-600">{site.slogan}</p>}
+          {site.slogan && <p data-anim="intro" className="mt-6 max-w-2xl text-xl leading-relaxed text-white/90">{site.slogan}</p>}
           {site.deviseEcole && (
-            <p data-anim="intro" className="mt-6 inline-block rounded-2xl border border-neutral-200 bg-white px-5 py-3 text-base text-slate-600 shadow-sm">
-              Notre devise : <strong className="font-display tracking-wide text-navy-900">{site.deviseEcole}</strong>
+            <p data-anim="intro" className="mt-6 inline-block rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-base text-white/90 backdrop-blur-sm">
+              Notre devise : <strong className="font-display tracking-wide text-white">{site.deviseEcole}</strong>
             </p>
           )}
           {site.localisation && (
-            <p data-anim="intro" className="mt-6 flex max-w-2xl items-start gap-2 text-slate-600">
+            <p data-anim="intro" className="mt-6 flex max-w-2xl items-start gap-2 text-white/85">
               <MapPin className="mt-1 h-4 w-4 shrink-0 text-[var(--ec-to)]" /> {site.localisation}
             </p>
           )}
           <div data-anim="intro" className="mt-10 flex flex-wrap gap-4">
             <Link
               href={`${base}/preinscription`}
-              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[var(--ec-from)] to-[var(--ec-to)] px-7 py-3.5 text-sm font-bold text-white shadow-[0_10px_25px_-8px_rgba(27,111,209,0.5)] transition-transform hover:scale-[1.03]"
+              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[var(--ec-from)] to-[var(--ec-to)] px-7 py-3.5 text-sm font-bold text-white shadow-[0_10px_25px_-5px_rgba(27,111,209,0.5)] transition-transform hover:scale-[1.03]"
             >
               Préinscrire mon enfant <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
             <Link
               href={`${base}/decouvrir`}
-              className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-7 py-3.5 text-sm font-bold text-navy-900 shadow-sm transition-colors hover:border-[var(--ec-primary)] hover:text-[var(--ec-primary)]"
+              className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-7 py-3.5 text-sm font-bold text-white backdrop-blur-sm transition-colors hover:bg-white/20"
             >
               Découvrir notre école
             </Link>
-            <BoutonFacebook lien={site.facebook} variante="clair" />
+            <BoutonFacebook lien={site.facebook} />
           </div>
         </div>
       </section>

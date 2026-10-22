@@ -6,7 +6,7 @@ import {
   ArrowDown, ArrowUp, ExternalLink, Globe, ImagePlus, Loader2, Plus, Save, Trash2,
 } from "lucide-react";
 import { actionMajSiteEcole } from "@/server/actions/site-ecole";
-import { monogramme, slugifier, type SiteEcole } from "@/lib/site-ecole";
+import { IMAGE_ACCUEIL_DEFAUT, monogramme, slugifier, type SiteEcole } from "@/lib/site-ecole";
 
 type Point = { titre: string; texte: string };
 
@@ -35,6 +35,30 @@ function logoVersDataUri(file: File): Promise<string> {
         if (!ctx) return reject(new Error("Canvas indisponible"));
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         resolve(canvas.toDataURL("image/png"));
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Photo d'accueil : 1600 px de large au plus, JPEG compressé (≈ 150–300 Ko).
+function photoVersDataUri(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Lecture du fichier impossible"));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Image illisible"));
+      img.onload = () => {
+        const echelle = Math.min(1, 1600 / img.width);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * echelle);
+        canvas.height = Math.round(img.height * echelle);
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("Canvas indisponible"));
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.78));
       };
       img.src = reader.result as string;
     };
@@ -200,6 +224,8 @@ export function SitePublicForm({
   const [isPending, startTransition] = useTransition();
   const [logoChargement, setLogoChargement] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [photoChargement, setPhotoChargement] = useState(false);
+  const photoRef = useRef<HTMLInputElement>(null);
   const off = !peutModifier;
 
   const maj = (p: Partial<SiteEcole>) => setSite((s) => ({ ...s, ...p }));
@@ -223,6 +249,21 @@ export function SitePublicForm({
       toast.error(err instanceof Error ? err.message : "Image illisible");
     } finally {
       setLogoChargement(false);
+    }
+  };
+
+  const choisirPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return toast.error("Choisissez un fichier image.");
+    setPhotoChargement(true);
+    try {
+      maj({ imageAccueil: await photoVersDataUri(file) });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Image illisible");
+    } finally {
+      setPhotoChargement(false);
     }
   };
 
@@ -371,6 +412,31 @@ export function SitePublicForm({
                 className={`${champ} mt-1`}
               />
             </label>
+          </div>
+        </div>
+        <div>
+          <p className={libelle}>Image d&apos;accueil</p>
+          <div className="mt-2 flex flex-wrap items-center gap-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={site.imageAccueil || IMAGE_ACCUEIL_DEFAUT}
+              alt="Image d'accueil"
+              className="h-20 w-36 rounded-xl border border-neutral-200 object-cover"
+            />
+            <div className="space-y-2">
+              <div className="flex flex-wrap gap-2">
+                <button type="button" disabled={off || photoChargement} onClick={() => photoRef.current?.click()} className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 px-4 py-2 text-xs font-semibold text-navy-900 hover:bg-neutral-50 disabled:opacity-50">
+                  {photoChargement ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5" />} Choisir une photo de l&apos;école
+                </button>
+                {site.imageAccueil && (
+                  <button type="button" disabled={off} onClick={() => maj({ imageAccueil: "" })} className="rounded-full px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50">
+                    Revenir à l&apos;image générique
+                  </button>
+                )}
+              </div>
+              <p className={aideCls}>Affichée en fond de la page d&apos;accueil. Une photo en largeur (bâtiment, cour, élèves) rend le mieux.</p>
+              <input ref={photoRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={choisirPhoto} />
+            </div>
           </div>
         </div>
         <Texte label="Slogan" value={site.slogan} onChange={(v) => maj({ slogan: v })} disabled={off} />

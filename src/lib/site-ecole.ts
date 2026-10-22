@@ -7,6 +7,9 @@ import { z } from "zod";
 export const CLE_SITE = "site_public";
 export const CLE_SLUG = "site_slug";
 
+/** Photo générique en fond de l'accueil tant que l'école n'a pas fourni la sienne. */
+export const IMAGE_ACCUEIL_DEFAUT = "/ecole-accueil.webp";
+
 export const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 const txt = (max: number) => z.string().trim().max(max);
@@ -32,6 +35,12 @@ export const siteEcoleSchema = z.object({
     .max(40, "Adresse du site trop longue")
     .regex(SLUG_RE, "Adresse du site : lettres minuscules, chiffres et tirets uniquement"),
   logo: logoSchema,
+  // Photo en fond de l'accueil (data URI redimensionné) ; vide = image générique IMAGE_ACCUEIL_DEFAUT.
+  imageAccueil: z
+    .string()
+    .max(900_000, "Image d'accueil trop volumineuse")
+    .refine((v) => v === "" || /^data:image\/(jpeg|webp);base64,/.test(v), "Format d'image invalide")
+    .default(""),
   nomComplet: txt(120).min(2, "Nom officiel requis"),
   nomCourt: txt(40).min(2, "Nom court requis"),
   deviseEcole: txt(120),
@@ -149,6 +158,7 @@ export function siteParDefaut(etab: {
     palette: "saimo",
     slug: slugifier(etab.nom) || etab.code.toLowerCase(),
     logo: "",
+    imageAccueil: "",
     nomComplet: etab.nom,
     nomCourt: etab.nom,
     deviseEcole: "",
