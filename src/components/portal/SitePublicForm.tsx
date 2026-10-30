@@ -226,6 +226,7 @@ export function SitePublicForm({
   const fileRef = useRef<HTMLInputElement>(null);
   const [photoChargement, setPhotoChargement] = useState(false);
   const photoRef = useRef<HTMLInputElement>(null);
+  const galerieRef = useRef<HTMLInputElement>(null);
   const off = !peutModifier;
 
   const maj = (p: Partial<SiteEcole>) => setSite((s) => ({ ...s, ...p }));
@@ -260,6 +261,22 @@ export function SitePublicForm({
     setPhotoChargement(true);
     try {
       maj({ imageAccueil: await photoVersDataUri(file) });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Image illisible");
+    } finally {
+      setPhotoChargement(false);
+    }
+  };
+
+  const ajouterPhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fichiers = [...(e.target.files ?? [])].filter((f) => f.type.startsWith("image/"));
+    e.target.value = "";
+    const place = 8 - site.galerie.length;
+    if (fichiers.length > place) toast.info(`Seules ${place} photo${place > 1 ? "s" : ""} de plus peuvent être ajoutées.`);
+    setPhotoChargement(true);
+    try {
+      const images = await Promise.all(fichiers.slice(0, place).map(photoVersDataUri));
+      setSite((s) => ({ ...s, galerie: [...s.galerie, ...images.map((image) => ({ image, legende: "" }))] }));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Image illisible");
     } finally {
@@ -441,6 +458,39 @@ export function SitePublicForm({
         </div>
         <Texte label="Slogan" value={site.slogan} onChange={(v) => maj({ slogan: v })} disabled={off} />
         <Texte label="Localisation (page d'accueil)" value={site.localisation} onChange={(v) => maj({ localisation: v })} disabled={off} />
+      </Section>
+
+      <Section titre="La vie à l'école" description="Photos affichées sur la page d'accueil (8 au maximum).">
+        {site.galerie.length > 0 && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {site.galerie.map((g, i) => (
+              <div key={i} className="flex gap-3 rounded-xl border border-neutral-200 bg-neutral-50/60 p-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={g.image} alt="" className="h-20 w-28 shrink-0 rounded-lg object-cover" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <input
+                    value={g.legende}
+                    disabled={off}
+                    onChange={(e) => maj({ galerie: site.galerie.map((x, j) => (j === i ? { ...x, legende: e.target.value } : x)) })}
+                    placeholder="Légende (facultatif)"
+                    className={`${champ} px-3 py-2`}
+                  />
+                  <div className="flex">
+                    <button type="button" aria-label="Avancer" disabled={off || i === 0} onClick={() => maj({ galerie: deplacer(site.galerie, i, -1) })} className={boutonIcone}><ArrowUp className="h-4 w-4" /></button>
+                    <button type="button" aria-label="Reculer" disabled={off || i === site.galerie.length - 1} onClick={() => maj({ galerie: deplacer(site.galerie, i, 1) })} className={boutonIcone}><ArrowDown className="h-4 w-4" /></button>
+                    <button type="button" aria-label="Supprimer" disabled={off} onClick={() => maj({ galerie: site.galerie.filter((_, j) => j !== i) })} className={`${boutonIcone} hover:text-red-600`}><Trash2 className="h-4 w-4" /></button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {site.galerie.length < 8 && (
+          <button type="button" disabled={off || photoChargement} onClick={() => galerieRef.current?.click()} className={boutonAjout}>
+            {photoChargement ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} Ajouter des photos
+          </button>
+        )}
+        <input ref={galerieRef} type="file" accept="image/png,image/jpeg,image/webp" multiple className="hidden" onChange={ajouterPhotos} />
       </Section>
 
       <Section titre="Coordonnées" description="Téléphones, e-mail de réception, adresse, horaires et Facebook.">

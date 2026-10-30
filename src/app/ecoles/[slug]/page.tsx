@@ -119,6 +119,36 @@ export default async function AccueilEcole({ params }: { params: Promise<{ slug:
         </section>
       )}
 
+      {/* La vie à l'école */}
+      {site.galerie.length > 0 && (
+        <section className="px-6 pb-20">
+          <div className="mx-auto max-w-6xl">
+            <Titre surtitre="La vie à l'école" titre={`Au quotidien au ${site.nomCourt}`} />
+            <div
+              data-anim="cartes"
+              className={`grid gap-5 ${site.galerie.length === 1 ? "" : site.galerie.length % 3 === 0 ? "sm:grid-cols-2 lg:grid-cols-3" : "sm:grid-cols-2"}`}
+            >
+              {site.galerie.map((g, i) => (
+                <figure key={i} className="group relative overflow-hidden rounded-3xl bg-neutral-200 shadow-[0_20px_40px_-24px_rgba(10,25,48,0.4)]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={g.image}
+                    alt={g.legende || `Photo ${i + 1} du ${site.nomComplet}`}
+                    loading="lazy"
+                    className="aspect-[4/3] w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                  {g.legende && (
+                    <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-5 pb-4 pt-12 text-sm font-semibold text-white">
+                      {g.legende}
+                    </figcaption>
+                  )}
+                </figure>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Cycles */}
       {site.cycles.length > 0 && (
         <section className="bg-white px-6 py-20">

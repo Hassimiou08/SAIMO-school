@@ -41,6 +41,19 @@ export const siteEcoleSchema = z.object({
     .max(900_000, "Image d'accueil trop volumineuse")
     .refine((v) => v === "" || /^data:image\/(jpeg|webp);base64,/.test(v), "Format d'image invalide")
     .default(""),
+  // Photos de la section « La vie à l'école » (data URI redimensionnés).
+  galerie: z
+    .array(
+      z.object({
+        image: z
+          .string()
+          .max(700_000, "Photo trop volumineuse")
+          .refine((v) => /^data:image\/(jpeg|webp);base64,/.test(v), "Format de photo invalide"),
+        legende: txt(120),
+      }),
+    )
+    .max(8, "8 photos au maximum")
+    .default([]),
   nomComplet: txt(120).min(2, "Nom officiel requis"),
   nomCourt: txt(40).min(2, "Nom court requis"),
   deviseEcole: txt(120),
@@ -159,6 +172,7 @@ export function siteParDefaut(etab: {
     slug: slugifier(etab.nom) || etab.code.toLowerCase(),
     logo: "",
     imageAccueil: "",
+    galerie: [],
     nomComplet: etab.nom,
     nomCourt: etab.nom,
     deviseEcole: "",
